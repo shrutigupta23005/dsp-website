@@ -42,7 +42,7 @@ const containerVariants = {
       staggerChildren: 0.15,
     },
   },
-};
+} as const;
 
 const cardVariants = {
   hidden: { opacity: 0, y: 40 },
@@ -54,7 +54,7 @@ const cardVariants = {
       ease: [0.16, 1, 0.3, 1],
     },
   },
-};
+} as const;
 
 export default function CategoryGrid() {
   return (

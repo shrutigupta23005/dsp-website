@@ -14,3 +14,8 @@ export const prisma =
   });
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+
+export const caseInsensitive = () => {
+  const isSqlite = process.env.DATABASE_URL?.startsWith("file:") || process.env.DATABASE_URL?.includes("dev.db");
+  return isSqlite ? {} : { mode: "insensitive" as any };
+};

@@ -1,26 +1,181 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f5f2ee;
+  --foreground: #1a1a1a;
+  --background-primary: #0a0a0a;
+  --background-secondary: #f5f2ee;
+  --accent: #c9933a;
+  --accent-hover: #e5ac52;
+  --text-primary: #1a1a1a;
+  --text-muted: #6b6b6b;
+  --success: #22c55e;
+  --border: #e2ddd6;
+  --card: #ffffff;
+  --card-foreground: #1a1a1a;
+  --muted: #ede7df;
+  --muted-foreground: #6b6b6b;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --ring: #c9933a;
+  --radius: 0.5rem;
+  --font-display: var(--font-playfair-display), Georgia, serif;
+  --font-body: var(--font-inter), Arial, sans-serif;
+  --font-utility: var(--font-jetbrains-mono), "DM Mono", monospace;
+  --shadow-card-hover: 0 24px 60px rgb(10 10 10 / 0.16);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-background-primary: var(--background-primary);
+  --color-background-secondary: var(--background-secondary);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-text-primary: var(--text-primary);
+  --color-text-muted: var(--text-muted);
+  --color-success: var(--success);
+  --color-border: var(--border);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-utility);
+  --font-serif: var(--font-display);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  outline-color: var(--ring);
+}
+
+img {
+  max-width: 100%;
+}
+
+.container-wide {
+  width: min(100% - 2rem, 1280px);
+  margin-inline: auto;
+}
+
+.container-narrow {
+  width: min(100% - 2rem, 960px);
+  margin-inline: auto;
+}
+
+.section-pad {
+  padding-block: clamp(4rem, 8vw, 7rem);
+}
+
+.eyebrow {
+  font-family: var(--font-utility);
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  color: var(--text-primary);
+  font-size: clamp(2.25rem, 5vw, 3.75rem);
+  line-height: 0.95;
+}
+
+.golden-rule {
+  display: block;
+  width: 96px;
+  height: 2px;
+  margin-top: 1rem;
+  background: var(--accent);
+  transform-origin: left center;
+}
+
+.golden-rule-center {
+  width: 96px;
+  height: 2px;
+  margin: 1rem auto 0;
+  background: var(--accent);
+}
+
+.price {
+  font-family: var(--font-utility);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.gradient-text {
+  background: linear-gradient(90deg, #c9933a, #e5ac52);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.whatsapp-pulse::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: 9999px;
+  border: 1px solid rgb(37 211 102 / 0.55);
+  animation: whatsapp-pulse 1.8s ease-out infinite;
+}
+
+.anniversary-spin {
+  animation: anniversary-spin 18s linear infinite;
+}
+
+@keyframes whatsapp-pulse {
+  from {
+    transform: scale(0.72);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.28);
+    opacity: 0;
+  }
+}
+
+@keyframes anniversary-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 640px) {
+  .container-wide,
+  .container-narrow {
+    width: min(100% - 1rem, 1280px);
+  }
 }

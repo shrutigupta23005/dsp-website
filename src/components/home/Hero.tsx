@@ -13,7 +13,7 @@ const containerVariants = {
       delayChildren: 0.3,
     },
   },
-};
+} as const;
 
 const lineVariants = {
   hidden: { opacity: 0, y: 30 },
@@ -25,7 +25,7 @@ const lineVariants = {
       ease: [0.16, 1, 0.3, 1],
     },
   },
-};
+} as const;
 
 const fadeUpVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -37,7 +37,7 @@ const fadeUpVariants = {
       ease: [0.16, 1, 0.3, 1],
     },
   },
-};
+} as const;
 
 export default function Hero() {
   return (

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma, caseInsensitive } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { productQuerySchema } from "@/lib/validators";
 import { Prisma } from "@prisma/client";
@@ -53,16 +53,16 @@ export async function GET(request: NextRequest) {
       if (params.maxPrice) where.price.lte = params.maxPrice;
     }
     if (params.color) {
-      where.colors = { some: { name: { contains: params.color, mode: "insensitive" } } };
+      where.colors = { some: { name: { contains: params.color, ...caseInsensitive() } } };
     }
     if (params.size) {
       where.sizes = { some: { size: params.size, isAvailable: true } };
     }
     if (params.search) {
       where.OR = [
-        { name: { contains: params.search, mode: "insensitive" } },
-        { description: { contains: params.search, mode: "insensitive" } },
-        { brand: { name: { contains: params.search, mode: "insensitive" } } },
+        { name: { contains: params.search, ...caseInsensitive() } },
+        { description: { contains: params.search, ...caseInsensitive() } },
+        { brand: { name: { contains: params.search, ...caseInsensitive() } } },
       ];
     }
 

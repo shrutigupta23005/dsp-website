@@ -33,7 +33,7 @@ export default function ProductCard({
       transition={{
         duration: 0.5,
         delay: index * 0.05,
-        ease: [0.16, 1, 0.3, 1],
+        ease: "easeOut",
       }}
     >
       <Link
@@ -64,7 +64,7 @@ export default function ProductCard({
               alt={`${product.name} - Lifestyle`}
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              className="object-cover opacity-0 transition-all duration-700 ease-out group-hover:opacity-100 group-hover:scale-105"
+              className="object-cover transition-all duration-700 ease-out [clip-path:inset(0_100%_0_0)] group-hover:scale-105 group-hover:[clip-path:inset(0_0_0_0)]"
             />
           )}
 
