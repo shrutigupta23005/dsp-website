@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { signupSchema } from "@/lib/validators";
+import { sendWelcomeEmail } from "@/lib/resend";
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,7 +10,7 @@ export async function POST(request: NextRequest) {
 
     const validated = signupSchema.safeParse({
       ...body,
-      confirmPassword: body.password,
+      confirmPassword: body.confirmPassword || body.password,
     });
 
     if (!validated.success) {
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    const user = await prisma.user.create({
+    await prisma.user.create({
       data: {
         name,
         email,
@@ -44,15 +45,11 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Fire-and-forget welcome email
+    sendWelcomeEmail(email, name).catch(() => undefined);
+
     return NextResponse.json(
-      {
-        success: true,
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-        },
-      },
+      { message: "Account created" },
       { status: 201 }
     );
   } catch (error) {

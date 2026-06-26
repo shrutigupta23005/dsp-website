@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Heart } from "lucide-react";
 import { cn, formatPrice, getStatusLabel, getStatusColor } from "@/lib/utils";
+import AddToCompareButton from "@/components/product/AddToCompareButton";
 import type { ProductWithRelations } from "@/types";
 
 interface ProductCardProps {
@@ -107,6 +108,11 @@ export default function ProductCard({
               />
             </button>
           )}
+
+          {/* Compare Button */}
+          <div className="absolute bottom-3 right-3 z-10 opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
+            <AddToCompareButton product={product} />
+          </div>
         </div>
 
         {/* Product Info */}

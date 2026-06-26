@@ -1,31 +1,57 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { motion } from "framer-motion";
-import { Mail, ShoppingBag, ArrowLeft, CheckCircle } from "lucide-react";
-import toast from "react-hot-toast";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
+
+const slideVariants = {
+  enter: (direction: number) => ({ x: direction > 0 ? 100 : -100, opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (direction: number) => ({ x: direction > 0 ? -100 : 100, opacity: 0 }),
+};
 
 export default function ForgotPasswordPage() {
+  const router = useRouter();
+  const [step, setStep] = useState(1);
+  const [direction, setDirection] = useState(1);
   const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [resetToken, setResetToken] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isSent, setIsSent] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Resend countdown
+  useEffect(() => {
+    if (resendTimer <= 0) return;
+    const timer = setTimeout(() => setResendTimer((t) => t - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendTimer]);
+
+  const goToStep = useCallback((nextStep: number) => {
+    setDirection(nextStep > step ? 1 : -1);
+    setStep(nextStep);
+  }, [step]);
+
+  // Step 1: Send OTP
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-
     try {
       const res = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-
       if (res.ok) {
-        setIsSent(true);
+        toast.success("OTP sent to your email");
+        setResendTimer(60);
+        goToStep(2);
       } else {
-        toast.error("Failed to send reset email. Please try again.");
+        toast.error("Failed to send OTP. Please try again.");
       }
     } catch {
       toast.error("Something went wrong");
@@ -34,95 +60,312 @@ export default function ForgotPasswordPage() {
     }
   };
 
+  // Step 2: Verify OTP
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const otpString = otp.join("");
+    if (otpString.length !== 6) {
+      toast.error("Please enter all 6 digits");
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp: otpString }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setResetToken(data.data.resetToken);
+        toast.success("Code verified!");
+        goToStep(3);
+      } else {
+        toast.error(data.error || "Invalid code");
+      }
+    } catch {
+      toast.error("Something went wrong");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Step 3: Reset Password
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 8) {
+      toast.error("Password must be at least 8 characters");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, resetToken, newPassword }),
+      });
+      if (res.ok) {
+        toast.success("Password reset successfully!");
+        setTimeout(() => router.push("/auth/login"), 2000);
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to reset password");
+      }
+    } catch {
+      toast.error("Something went wrong");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // OTP input handlers
+  const handleOtpChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return;
+    const newOtp = [...otp];
+    newOtp[index] = value.slice(-1);
+    setOtp(newOtp);
+    if (value && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    const newOtp = [...otp];
+    pasted.split("").forEach((char, i) => {
+      newOtp[i] = char;
+    });
+    setOtp(newOtp);
+    otpRefs.current[Math.min(pasted.length, 5)]?.focus();
+  };
+
+  const handleResendOtp = async () => {
+    if (resendTimer > 0) return;
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (res.ok) {
+        toast.success("New OTP sent");
+        setResendTimer(60);
+        setOtp(["", "", "", "", "", ""]);
+      }
+    } catch {
+      toast.error("Failed to resend");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background-secondary px-6">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
-      >
-        <Link href="/" className="flex items-center gap-3 mb-10">
-          <ShoppingBag className="w-8 h-8 text-accent" strokeWidth={1.5} />
-          <div>
-            <span className="text-lg font-bold text-text-primary block leading-none" style={{ fontFamily: "var(--font-display)" }}>
-              Delhi Shoe Palace
-            </span>
-            <span className="text-[10px] tracking-[0.2em] text-accent uppercase">Est. 2001</span>
-          </div>
-        </Link>
+    <>
+      {/* Step indicator dots */}
+      <div className="flex items-center justify-center gap-2 mb-8">
+        {[1, 2, 3].map((s) => (
+          <div
+            key={s}
+            className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+              s === step
+                ? "bg-accent scale-125"
+                : s < step
+                ? "bg-accent/50"
+                : "border-2 border-gray-300 bg-transparent"
+            }`}
+          />
+        ))}
+      </div>
 
-        {isSent ? (
-          <div className="text-center">
-            <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle className="w-8 h-8 text-green-500" />
-            </div>
-            <h1 className="text-2xl font-bold text-text-primary mb-2" style={{ fontFamily: "var(--font-display)" }}>
-              Check Your Email
-            </h1>
-            <p className="text-text-muted mb-8">
-              We&apos;ve sent a password reset link to <strong>{email}</strong>.
-              Please check your inbox and follow the instructions.
-            </p>
-            <Link
-              href="/auth/login"
-              className="inline-flex items-center gap-2 text-sm font-medium text-accent hover:text-accent-hover transition-colors"
+      <AnimatePresence mode="wait" custom={direction}>
+        {step === 1 && (
+          <motion.div
+            key="step1"
+            custom={direction}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.3 }}
+          >
+            <h2
+              className="text-[28px] font-bold text-text-primary text-center"
+              style={{ fontFamily: "var(--font-display)" }}
             >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Login
-            </Link>
-          </div>
-        ) : (
-          <>
-            <h1 className="text-3xl font-bold text-text-primary mb-2" style={{ fontFamily: "var(--font-display)" }}>
-              Forgot Password
-            </h1>
-            <p className="text-text-muted mb-8">
-              Enter your email address and we&apos;ll send you a link to reset your password.
+              Reset Password
+            </h2>
+            <p className="text-sm text-text-muted text-center mt-2 mb-8">
+              Enter your registered email
             </p>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSendOtp} className="space-y-4">
               <div>
                 <label htmlFor="reset-email" className="block text-sm font-medium text-text-primary mb-1.5">
-                  Email Address
+                  Email
                 </label>
-                <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                <input
+                  id="reset-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  required
+                  className="w-full h-11 px-4 bg-white border border-border rounded-lg text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full h-11 bg-accent hover:bg-accent-hover text-white font-semibold text-sm rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              >
+                {isLoading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  "Send OTP"
+                )}
+              </button>
+            </form>
+          </motion.div>
+        )}
+
+        {step === 2 && (
+          <motion.div
+            key="step2"
+            custom={direction}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.3 }}
+          >
+            <h2
+              className="text-[28px] font-bold text-text-primary text-center"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              Check Your Email
+            </h2>
+            <p className="text-sm text-text-muted text-center mt-2 mb-8">
+              Enter the 6-digit code sent to <strong className="text-text-primary">{email}</strong>
+            </p>
+            <form onSubmit={handleVerifyOtp} className="space-y-6">
+              <div className="flex justify-center gap-2" onPaste={handleOtpPaste}>
+                {otp.map((digit, i) => (
                   <input
-                    id="reset-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    required
-                    className="w-full h-12 pl-11 pr-4 bg-white border border-border rounded-lg text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all"
+                    key={i}
+                    ref={(el) => { otpRefs.current[i] = el; }}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleOtpChange(i, e.target.value)}
+                    onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                    className="w-12 h-14 text-center text-xl font-bold border-2 border-border rounded-lg focus:border-accent focus:ring-1 focus:ring-accent/30 outline-none transition-all"
+                    style={{ fontFamily: "var(--font-utility)" }}
                   />
-                </div>
+                ))}
+              </div>
+
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={handleResendOtp}
+                  disabled={resendTimer > 0}
+                  className="text-xs text-text-muted hover:text-accent transition-colors disabled:cursor-not-allowed"
+                >
+                  {resendTimer > 0 ? `Resend in ${resendTimer}s` : "Resend OTP"}
+                </button>
               </div>
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-12 bg-accent hover:bg-accent-hover text-[#0A0A0A] font-semibold text-sm rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                id="forgot-password-btn"
+                className="w-full h-11 bg-accent hover:bg-accent-hover text-white font-semibold text-sm rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
                 {isLoading ? (
-                  <div className="w-5 h-5 border-2 border-[#0A0A0A]/20 border-t-[#0A0A0A] rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
-                  "Send Reset Link"
+                  "Verify Code"
                 )}
               </button>
             </form>
-
-            <p className="text-center text-sm text-text-muted mt-8">
-              Remember your password?{" "}
-              <Link href="/auth/login" className="text-accent hover:text-accent-hover font-medium transition-colors">
-                Sign In
-              </Link>
-            </p>
-          </>
+          </motion.div>
         )}
-      </motion.div>
-    </div>
+
+        {step === 3 && (
+          <motion.div
+            key="step3"
+            custom={direction}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.3 }}
+          >
+            <h2
+              className="text-[28px] font-bold text-text-primary text-center"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              Set New Password
+            </h2>
+            <p className="text-sm text-text-muted text-center mt-2 mb-8">
+              Choose a strong password for your account
+            </p>
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <div>
+                <label htmlFor="new-password" className="block text-sm font-medium text-text-primary mb-1.5">
+                  New Password
+                </label>
+                <input
+                  id="new-password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Min. 8 characters"
+                  required
+                  minLength={8}
+                  className="w-full h-11 px-4 bg-white border border-border rounded-lg text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all"
+                />
+              </div>
+              <div>
+                <label htmlFor="confirm-new-password" className="block text-sm font-medium text-text-primary mb-1.5">
+                  Confirm Password
+                </label>
+                <input
+                  id="confirm-new-password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm your password"
+                  required
+                  className="w-full h-11 px-4 bg-white border border-border rounded-lg text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full h-11 bg-accent hover:bg-accent-hover text-white font-semibold text-sm rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              >
+                {isLoading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  "Reset Password"
+                )}
+              </button>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

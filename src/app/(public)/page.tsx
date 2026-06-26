@@ -33,6 +33,15 @@ export default async function HomePage() {
       featuredProducts={JSON.parse(JSON.stringify(featuredProducts))}
       isAuthenticated={!!session}
       wishlistedIds={wishlistedIds}
+      user={
+        session?.user
+          ? {
+              name: session.user.name || null,
+              email: session.user.email || null,
+              createdAt: ((session.user as unknown) as Record<string, unknown>).createdAt as string | undefined,
+            }
+          : null
+      }
     />
   );
 }

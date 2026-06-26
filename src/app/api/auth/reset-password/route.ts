@@ -9,24 +9,35 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = resetPasswordSchema.safeParse(body);
     if (!parsed.success) return fail(parsed.error.errors[0].message, 400);
-    if (!body.token || typeof body.token !== "string") return fail("Reset token is required", 400);
 
-    const token = await prisma.passwordResetToken.findUnique({
-      where: { token: body.token },
+    const { email, resetToken, newPassword } = parsed.data;
+
+    // Find the reset token
+    const token = await prisma.verificationToken.findFirst({
+      where: { identifier: `reset_${email}` },
     });
 
-    if (!token || token.expires < new Date()) {
-      return fail("This reset link is invalid or expired", 400);
+    if (!token || token.token !== resetToken) {
+      return fail("Invalid or expired reset token", 400);
     }
 
-    const hashedPassword = await bcrypt.hash(parsed.data.password, 12);
+    if (token.expires < new Date()) {
+      return fail("Reset token has expired. Please start over.", 400);
+    }
+
+    // Hash and update password
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
     await prisma.user.update({
-      where: { email: token.email },
+      where: { email },
       data: { password: hashedPassword },
     });
-    await prisma.passwordResetToken.deleteMany({ where: { email: token.email } });
 
-    return message("Password updated successfully");
+    // Clean up reset token
+    await prisma.verificationToken.deleteMany({
+      where: { identifier: `reset_${email}` },
+    });
+
+    return message("Password reset successfully");
   } catch (error) {
     console.error("Reset password error:", error);
     return fail("Unable to reset password", 500);

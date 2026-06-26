@@ -4,9 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Heart, MessageCircle, Scale } from "lucide-react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import ProductCard from "@/components/product/ProductCard";
+import RecentlyViewed from "@/components/product/RecentlyViewed";
 import { Button } from "@/components/ui/button";
+import { useCompareStore } from "@/store/compareStore";
 import type { ProductWithRelations } from "@/types";
 import { cn, formatPrice, getStatusLabel, getWhatsAppUrl } from "@/lib/utils";
 
@@ -40,6 +42,9 @@ export default function ProductDetailClient({
     }).catch(() => undefined);
   }, [isAuthenticated, product.id]);
 
+  // Zustand compare store
+  const { add: addToCompare, isAdded: isCompareAdded } = useCompareStore();
+
   const toggleWishlist = async () => {
     if (!isAuthenticated) {
       toast.error("Please login to use wishlist");
@@ -60,22 +65,8 @@ export default function ProductDetailClient({
     }
   };
 
-  const addToCompare = async () => {
-    if (!isAuthenticated) {
-      toast.error("Please login to compare products");
-      return;
-    }
-    const res = await fetch("/api/compare", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ productId: product.id }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      toast.error(data.error || "Could not add to compare");
-      return;
-    }
-    toast.success("Added to compare");
+  const handleCompare = () => {
+    addToCompare(product);
   };
 
   return (
@@ -177,9 +168,9 @@ export default function ProductDetailClient({
                 <Heart className={cn("h-4 w-4", isWishlisted && "fill-current text-red-500")} />
                 {isWishlisted ? "Saved" : "Wishlist"}
               </Button>
-              <Button type="button" variant="outline" size="lg" onClick={addToCompare}>
-                <Scale className="h-4 w-4" />
-                Compare
+              <Button type="button" variant="outline" size="lg" onClick={handleCompare}>
+                <Scale className={cn("h-4 w-4", isCompareAdded(product.id) && "text-accent")} />
+                {isCompareAdded(product.id) ? "In Compare" : "Compare"}
               </Button>
             </div>
           </div>
@@ -197,6 +188,7 @@ export default function ProductDetailClient({
           </div>
         </div>
       </section>
+      <RecentlyViewed currentProductId={product.id} />
     </div>
   );
 }

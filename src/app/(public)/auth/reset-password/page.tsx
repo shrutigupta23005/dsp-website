@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Lock, ShoppingBag } from "lucide-react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 function ResetPasswordForm() {
   const router = useRouter();

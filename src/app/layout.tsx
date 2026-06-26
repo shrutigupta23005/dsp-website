@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { Inter, JetBrains_Mono, Playfair_Display } from "next/font/google";
-import { Toaster } from "react-hot-toast";
+import { Toaster } from "sonner";
+import AuthProvider from "@/components/auth/AuthProvider";
+import CompareBar from "@/components/product/CompareBar";
 import "./globals.css";
 
 const inter = Inter({
@@ -83,9 +85,13 @@ export default function RootLayout({
             </Script>
           </>
         ) : null}
-        {children}
+        <AuthProvider>
+          {children}
+          <CompareBar />
+        </AuthProvider>
         <Toaster
           position="bottom-right"
+          theme="dark"
           toastOptions={{
             style: {
               background: "#1A1A1A",
@@ -94,12 +100,6 @@ export default function RootLayout({
               fontSize: "14px",
               borderRadius: "8px",
               border: "1px solid #2A2A2A",
-            },
-            success: {
-              iconTheme: {
-                primary: "#C9933A",
-                secondary: "#1A1A1A",
-              },
             },
           }}
         />

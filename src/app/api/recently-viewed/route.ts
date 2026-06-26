@@ -1,10 +1,10 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { prisma, caseInsensitive } from "@/lib/prisma";
 import { fail, ok, requireUser } from "@/lib/api";
 
 const recentlyViewedSchema = z.object({
-  productId: z.string().cuid(),
+  productId: z.string().min(1),
 });
 
 export async function GET() {
@@ -27,7 +27,7 @@ export async function GET() {
         },
       },
       orderBy: { viewedAt: "desc" },
-      take: 24,
+      take: 10,
     });
 
     return ok(items);
@@ -45,23 +45,47 @@ export async function POST(request: NextRequest) {
     const parsed = recentlyViewedSchema.safeParse(await request.json());
     if (!parsed.success) return fail(parsed.error.errors[0].message, 400);
 
+    const { productId } = parsed.data;
+
+    // Upsert recently viewed
     await prisma.recentlyViewed.upsert({
       where: {
         userId_productId: {
           userId: session.user.id,
-          productId: parsed.data.productId,
+          productId,
         },
       },
       create: {
         userId: session.user.id,
-        productId: parsed.data.productId,
+        productId,
+        viewedAt: new Date(),
       },
       update: {
         viewedAt: new Date(),
       },
     });
 
-    return ok({ productId: parsed.data.productId });
+    // Increment view count
+    await prisma.product.update({
+      where: { id: productId },
+      data: { viewCount: { increment: 1 } },
+    });
+
+    // Cleanup: keep only latest 20 per user
+    const all = await prisma.recentlyViewed.findMany({
+      where: { userId: session.user.id },
+      orderBy: { viewedAt: "desc" },
+      select: { id: true },
+    });
+
+    if (all.length > 20) {
+      const toDelete = all.slice(20).map((r) => r.id);
+      await prisma.recentlyViewed.deleteMany({
+        where: { id: { in: toDelete } },
+      });
+    }
+
+    return ok({ productId });
   } catch (error) {
     console.error("Recently viewed POST error:", error);
     return fail("Failed to log recently viewed product", 500);

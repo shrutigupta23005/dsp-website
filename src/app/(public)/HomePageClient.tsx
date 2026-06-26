@@ -1,25 +1,32 @@
 "use client";
 
 import { useState } from "react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import Hero from "@/components/home/Hero";
 import CategoryGrid from "@/components/home/CategoryGrid";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
 import AboutStrip from "@/components/home/AboutStrip";
 import QuizTeaser from "@/components/home/QuizTeaser";
 import StoreInfo from "@/components/home/StoreInfo";
+import PersonalizedSection from "@/components/home/PersonalizedSection";
 import type { ProductWithRelations } from "@/types";
 
 interface HomePageClientProps {
   featuredProducts: ProductWithRelations[];
   isAuthenticated: boolean;
   wishlistedIds: string[];
+  user: {
+    name?: string | null;
+    email?: string | null;
+    createdAt?: string;
+  } | null;
 }
 
 export default function HomePageClient({
   featuredProducts,
   isAuthenticated,
   wishlistedIds: initialWishlistedIds,
+  user,
 }: HomePageClientProps) {
   const [wishlistedIds, setWishlistedIds] = useState<string[]>(initialWishlistedIds);
 
@@ -66,6 +73,13 @@ export default function HomePageClient({
   return (
     <>
       <Hero />
+      {isAuthenticated && user && (
+        <PersonalizedSection
+          user={user}
+          wishlistedIds={wishlistedIds}
+          onWishlistToggle={handleWishlistToggle}
+        />
+      )}
       <CategoryGrid />
       <FeaturedProducts
         products={featuredProducts}

@@ -4,7 +4,7 @@ import { z } from "zod";
 
 export const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().min(1, "Password is required"),
 });
 
 export const signupSchema = z
@@ -14,9 +14,7 @@ export const signupSchema = z
     password: z
       .string()
       .min(8, "Password must be at least 8 characters")
-      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-      .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-      .regex(/[0-9]/, "Password must contain at least one number"),
+      .regex(/(?=.*[A-Z])(?=.*[0-9])/, "Must contain an uppercase letter and a number"),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -28,20 +26,19 @@ export const forgotPasswordSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
 });
 
-export const resetPasswordSchema = z
-  .object({
-    password: z
-      .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-      .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-      .regex(/[0-9]/, "Password must contain at least one number"),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
+export const verifyOtpSchema = z.object({
+  email: z.string().email(),
+  otp: z.string().length(6, "OTP must be 6 digits"),
+});
+
+export const resetPasswordSchema = z.object({
+  email: z.string().email(),
+  resetToken: z.string().min(1, "Reset token is required"),
+  newPassword: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/(?=.*[A-Z])(?=.*[0-9])/, "Must contain an uppercase letter and a number"),
+});
 
 // ─── Product Validators ─────────────────────────────────────
 
@@ -99,6 +96,18 @@ export const brandSchema = z.object({
   description: z.string().max(500).optional(),
 });
 
+// ─── Wishlist Validators ────────────────────────────────────
+
+export const wishlistSchema = z.object({
+  productId: z.string().min(1, "Product ID is required"),
+});
+
+// ─── Recently Viewed Validators ─────────────────────────────
+
+export const recentlyViewedSchema = z.object({
+  productId: z.string().min(1, "Product ID is required"),
+});
+
 // ─── Quiz Validators ────────────────────────────────────────
 
 export const quizSchema = z.object({
@@ -106,6 +115,23 @@ export const quizSchema = z.object({
   occasion: z.enum(["Sports", "Casual", "Formal", "Fancy"]),
   colorFamily: z.enum(["Neutral", "Bold", "Pastel", "All"]),
   budget: z.enum(["under500", "500to1500", "1500to3000", "above3000"]),
+});
+
+// ─── Profile Validators ─────────────────────────────────────
+
+export const profileUpdateSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters").optional(),
+  email: z.string().email("Please enter a valid email address").optional(),
+});
+
+// ─── Contact Validators ─────────────────────────────────────
+
+export const contactSchema = z.object({
+  name: z.string().min(2, "Name is required"),
+  email: z.string().email("Please enter a valid email"),
+  phone: z.string().optional(),
+  subject: z.string().min(2, "Subject is required"),
+  message: z.string().min(20, "Message must be at least 20 characters").max(500, "Message is too long"),
 });
 
 // ─── Query Validators ───────────────────────────────────────
@@ -131,10 +157,15 @@ export const productQuerySchema = z.object({
 export type LoginInput = z.infer<typeof loginSchema>;
 export type SignupInput = z.infer<typeof signupSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type VerifyOtpInput = z.infer<typeof verifyOtpSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 export type ProductInput = z.infer<typeof productSchema>;
 export type CategoryInput = z.infer<typeof categorySchema>;
 export type SubcategoryInput = z.infer<typeof subcategorySchema>;
 export type BrandInput = z.infer<typeof brandSchema>;
+export type WishlistInput = z.infer<typeof wishlistSchema>;
+export type RecentlyViewedInput = z.infer<typeof recentlyViewedSchema>;
 export type QuizInput = z.infer<typeof quizSchema>;
+export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
+export type ContactInput = z.infer<typeof contactSchema>;
 export type ProductQueryInput = z.infer<typeof productQuerySchema>;

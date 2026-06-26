@@ -1,7 +1,6 @@
-import { randomBytes } from "crypto";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { sendPasswordResetEmail } from "@/lib/resend";
+import { sendOtpEmail } from "@/lib/resend";
 import { fail, message } from "@/lib/api";
 import { forgotPasswordSchema } from "@/lib/validators";
 
@@ -11,26 +10,39 @@ export async function POST(request: NextRequest) {
     const parsed = forgotPasswordSchema.safeParse(body);
     if (!parsed.success) return fail(parsed.error.errors[0].message, 400);
 
-    const user = await prisma.user.findUnique({ where: { email: parsed.data.email } });
+    const { email } = parsed.data;
+
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    // Always return success to prevent email enumeration
     if (!user?.email || !user.password) {
-      return message("If an account exists, a reset link has been sent.");
+      return message("If this email is registered, you'll receive an OTP");
     }
 
-    const token = randomBytes(32).toString("hex");
-    const expires = new Date(Date.now() + 60 * 60 * 1000);
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    await prisma.passwordResetToken.deleteMany({ where: { email: user.email } });
-    await prisma.passwordResetToken.create({
-      data: { email: user.email, token, expires },
+    // Delete any existing OTP for this email, then create new
+    await prisma.verificationToken.deleteMany({
+      where: { identifier: email },
     });
 
+    await prisma.verificationToken.create({
+      data: {
+        identifier: email,
+        token: otp,
+        expires: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
+      },
+    });
+
+    // Send OTP email (fire-and-forget)
     if (process.env.RESEND_API_KEY) {
-      await sendPasswordResetEmail(user.email, token);
+      sendOtpEmail(email, user.name || "", otp).catch(() => undefined);
     } else {
-      console.warn("RESEND_API_KEY is missing. Password reset token:", token);
+      console.warn("RESEND_API_KEY missing. OTP:", otp);
     }
 
-    return message("If an account exists, a reset link has been sent.");
+    return message("If this email is registered, you'll receive an OTP");
   } catch (error) {
     console.error("Forgot password error:", error);
     return fail("Unable to start password reset", 500);
