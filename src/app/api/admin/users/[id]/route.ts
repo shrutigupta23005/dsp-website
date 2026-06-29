@@ -1,28 +1,125 @@
-import { NextRequest } from "next/server";
-import { z } from "zod";
+import { NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { fail, ok, requireAdmin } from "@/lib/api";
 
-const userUpdateSchema = z.object({
-  role: z.enum(["USER", "ADMIN"]).optional(),
-  isBlocked: z.boolean().optional(),
-});
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth();
+  if (!session || session.user?.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
-export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { response } = await requireAdmin();
-    if (response) return response;
     const { id } = await params;
-    const parsed = userUpdateSchema.safeParse(await request.json());
-    if (!parsed.success) return fail(parsed.error.errors[0].message, 400);
-    const user = await prisma.user.update({
+
+    const user = await prisma.user.findUnique({
       where: { id },
-      data: parsed.data,
-      select: { id: true, name: true, email: true, role: true, isBlocked: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        role: true,
+        isBlocked: true,
+        createdAt: true,
+        wishlist: {
+          orderBy: { createdAt: "desc" },
+          take: 5,
+          include: {
+            product: {
+              include: {
+                images: {
+                  where: { type: "PRIMARY" },
+                  take: 1,
+                },
+                brand: true,
+              },
+            },
+          },
+        },
+        recentlyViewed: {
+          orderBy: { viewedAt: "desc" },
+          take: 5,
+          include: {
+            product: {
+              include: {
+                images: {
+                  where: { type: "PRIMARY" },
+                  take: 1,
+                },
+                brand: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            wishlist: true,
+            recentlyViewed: true,
+          },
+        },
+      },
     });
-    return ok(user);
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(user);
   } catch (error) {
-    console.error("Admin user update error:", error);
-    return fail("Failed to update user", 500);
+    console.error("Failed to fetch user details:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth();
+  if (!session || session.user?.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    const { isBlocked } = body;
+
+    if (isBlocked === undefined || typeof isBlocked !== "boolean") {
+      return NextResponse.json({ error: "Invalid parameters" }, { status: 400 });
+    }
+
+    // Prevent blocking self
+    if (session.user.id === id) {
+      return NextResponse.json(
+        { error: "You cannot block yourself" },
+        { status: 400 }
+      );
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: { isBlocked },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        isBlocked: true,
+      },
+    });
+
+    return NextResponse.json(updatedUser);
+  } catch (error) {
+    console.error("Failed to update user block status:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }

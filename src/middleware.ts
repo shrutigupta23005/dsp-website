@@ -8,7 +8,16 @@ export default auth((req) => {
   const pathname = nextUrl.pathname;
 
   // Define route groups
-  const isAdminRoute = pathname.startsWith("/admin") || pathname.startsWith("/api/admin");
+  const isAdminRoute = pathname.startsWith("/admin");
+  const isAdminApiRoute = pathname.startsWith("/api/admin");
+
+  // Auth routes (login, signup, etc.)
+  const isAuthRoute =
+    pathname.startsWith("/auth/login") ||
+    pathname.startsWith("/auth/signup") ||
+    pathname.startsWith("/auth/forgot-password");
+
+  // Protect user routes (protected folder routes)
   const isProtectedRoute =
     pathname.startsWith("/wishlist") ||
     pathname.startsWith("/profile") ||
@@ -16,15 +25,12 @@ export default auth((req) => {
     pathname.startsWith("/recommendations") ||
     pathname.startsWith("/compare") ||
     pathname.startsWith("/quiz");
+
   const isProtectedApi =
     pathname.startsWith("/api/wishlist") ||
     pathname.startsWith("/api/recently-viewed") ||
     pathname.startsWith("/api/quiz") ||
     pathname.startsWith("/api/compare");
-  const isAuthRoute =
-    pathname.startsWith("/auth/login") ||
-    pathname.startsWith("/auth/signup") ||
-    pathname.startsWith("/auth/forgot-password");
 
   // Redirect logged-in users away from auth pages
   if (isLoggedIn && isAuthRoute) {
@@ -34,10 +40,19 @@ export default auth((req) => {
   // Protect admin routes
   if (isAdminRoute) {
     if (!isLoggedIn) {
-      return NextResponse.redirect(new URL("/auth/login", nextUrl));
+      return NextResponse.redirect(
+        new URL(`/auth/login?callbackUrl=${encodeURIComponent(pathname)}`, nextUrl)
+      );
     }
     if (userRole !== "ADMIN") {
-      return NextResponse.redirect(new URL("/", nextUrl));
+      return NextResponse.redirect(new URL("/?error=unauthorized", nextUrl));
+    }
+  }
+
+  // Protect Admin API routes
+  if (isAdminApiRoute) {
+    if (!isLoggedIn || userRole !== "ADMIN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
   }
 
@@ -49,7 +64,7 @@ export default auth((req) => {
     );
   }
 
-  // Protect API routes
+  // Protect user API routes
   if (isProtectedApi && !isLoggedIn) {
     return NextResponse.json(
       { error: "Authentication required" },
@@ -72,3 +87,4 @@ export const config = {
     "/((?!_next/static|_next/image|favicon.ico|public/).*)",
   ],
 };
+

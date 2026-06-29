@@ -1,19 +1,47 @@
 import { prisma } from "@/lib/prisma";
-import UserManager from "@/components/admin/UserManager";
+import UsersTable from "@/components/admin/UsersTable";
+import { auth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminUsersPage() {
-  const users = await prisma.user.findMany({
-    orderBy: { createdAt: "desc" },
-    select: { id: true, name: true, email: true, role: true, isBlocked: true, createdAt: true },
-  });
+export default async function UsersPage() {
+  const session = await auth();
+  const currentUserId = session?.user?.id || "";
+
+  const [initialUsers, total, activeCount, blockedCount] = await Promise.all([
+    prisma.user.findMany({
+      take: 20,
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        role: true,
+        isBlocked: true,
+        createdAt: true,
+        _count: {
+          select: {
+            wishlist: true,
+            recentlyViewed: true,
+          },
+        },
+      },
+    }),
+    prisma.user.count({ where: { role: "USER" } }),
+    prisma.user.count({ where: { role: "USER", isBlocked: false } }),
+    prisma.user.count({ where: { role: "USER", isBlocked: true } }),
+  ]);
 
   return (
-    <div>
-      <p className="eyebrow">Access Control</p>
-      <h1 className="mb-8 mt-2 text-3xl font-bold text-text-primary" style={{ fontFamily: "var(--font-display)" }}>Users</h1>
-      <UserManager users={JSON.parse(JSON.stringify(users))} />
+    <div className="space-y-6">
+      <UsersTable
+        initialUsers={initialUsers}
+        initialTotal={total}
+        activeCount={activeCount}
+        blockedCount={blockedCount}
+        currentUserId={currentUserId}
+      />
     </div>
   );
 }

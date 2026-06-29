@@ -1,56 +1,184 @@
-import { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { prisma, caseInsensitive } from "@/lib/prisma";
 import { productSchema } from "@/lib/validators";
-import { prisma } from "@/lib/prisma";
-import { fail, ok, requireAdmin } from "@/lib/api";
 import { slugify } from "@/lib/utils";
 
-type AdminProductImageInput = {
-  url: string;
-  publicId?: string | null;
-  type?: "PRIMARY" | "GALLERY" | "LIFESTYLE" | "ALT_ANGLE";
-  alt?: string | null;
-};
+export async function GET(request: Request) {
+  const session = await auth();
+  if (!session || session.user?.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
-export async function GET() {
-  const { response } = await requireAdmin();
-  if (response) return response;
-  const products = await prisma.product.findMany({
-    include: { brand: true, category: true, subcategory: true, images: true, sizes: true, colors: true },
-    orderBy: { updatedAt: "desc" },
-  });
-  return ok(products);
+  try {
+    const url = new URL(request.url);
+    const page = parseInt(url.searchParams.get("page") || "1", 10);
+    const limit = parseInt(url.searchParams.get("limit") || "20", 10);
+    const search = url.searchParams.get("search") || "";
+    const categoryId = url.searchParams.get("category") || "";
+    const brandId = url.searchParams.get("brand") || "";
+    const status = url.searchParams.get("status") || "";
+    const sort = url.searchParams.get("sort") || "newest";
+
+    const where: any = {};
+
+    if (search) {
+      where.name = {
+        contains: search,
+        ...caseInsensitive(),
+      };
+    }
+    if (categoryId) {
+      where.categoryId = categoryId;
+    }
+    if (brandId) {
+      where.brandId = brandId;
+    }
+    if (status) {
+      where.status = status;
+    }
+
+    let orderBy: any = { createdAt: "desc" };
+    if (sort === "price-asc") {
+      orderBy = { price: "asc" };
+    } else if (sort === "price-desc") {
+      orderBy = { price: "desc" };
+    } else if (sort === "popular") {
+      orderBy = { viewCount: "desc" };
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [products, total] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        orderBy,
+        skip,
+        take: limit,
+        include: {
+          images: {
+            where: { type: "PRIMARY" },
+            take: 1,
+          },
+          brand: true,
+          category: true,
+          subcategory: true,
+          sizes: true,
+          colors: true,
+        },
+      }),
+      prisma.product.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return NextResponse.json({
+      products,
+      total,
+      page,
+      totalPages,
+    });
+  } catch (error) {
+    console.error("Failed to query products:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
+  }
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const { response } = await requireAdmin();
-    if (response) return response;
-    const body = await request.json();
-    const parsed = productSchema.safeParse(body);
-    if (!parsed.success) return fail(parsed.error.errors[0].message, 400);
+export async function POST(request: Request) {
+  const session = await auth();
+  if (!session || session.user?.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
-    const images = Array.isArray(body.images) ? (body.images as AdminProductImageInput[]) : [];
+  try {
+    const body = await request.json();
+    const validated = productSchema.safeParse(body);
+
+    if (!validated.success) {
+      return NextResponse.json(
+        { error: "Validation failed", details: validated.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const {
+      name,
+      description,
+      price,
+      brandId,
+      categoryId,
+      subcategoryId,
+      gender,
+      material,
+      status,
+      isFeatured,
+      sizes,
+      colors,
+    } = validated.data;
+
+    // Generate unique slug
+    const baseSlug = slugify(name);
+    let slug = baseSlug;
+    let counter = 1;
+    while (true) {
+      const existing = await prisma.product.findUnique({
+        where: { slug },
+      });
+      if (!existing) break;
+      counter++;
+      slug = `${baseSlug}-${counter}`;
+    }
+
+    // Create product
     const product = await prisma.product.create({
       data: {
-        name: parsed.data.name,
-        slug: parsed.data.slug || slugify(parsed.data.name),
-        description: parsed.data.description,
-        price: parsed.data.price,
-        brandId: parsed.data.brandId,
-        categoryId: parsed.data.categoryId,
-        subcategoryId: parsed.data.subcategoryId,
-        gender: parsed.data.gender,
-        material: parsed.data.material,
-        status: parsed.data.status,
-        isFeatured: parsed.data.isFeatured,
-        images: { create: images.map((image, order) => ({ url: image.url, publicId: image.publicId, type: image.type, order, alt: image.alt })) },
-        sizes: { create: parsed.data.sizes },
-        colors: { create: parsed.data.colors },
+        name,
+        slug,
+        description,
+        price,
+        brandId,
+        categoryId,
+        subcategoryId,
+        gender,
+        material,
+        status,
+        isFeatured,
+        sizes: {
+          createMany: {
+            data: sizes.map((s) => ({
+              size: s.size,
+              isAvailable: s.isAvailable,
+            })),
+          },
+        },
+        colors: {
+          createMany: {
+            data: colors.map((c) => ({
+              name: c.name,
+              hexCode: c.hexCode || null,
+            })),
+          },
+        },
+      },
+      include: {
+        images: true,
+        sizes: true,
+        colors: true,
+        brand: true,
+        category: true,
+        subcategory: true,
       },
     });
-    return ok(product, { status: 201 });
+
+    return NextResponse.json(product);
   } catch (error) {
-    console.error("Admin product create error:", error);
-    return fail("Failed to create product", 500);
+    console.error("Failed to create product:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
