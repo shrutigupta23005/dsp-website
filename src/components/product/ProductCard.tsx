@@ -6,6 +6,8 @@ import Link from "next/link";
 import { Heart } from "lucide-react";
 import { cn, formatPrice, getStatusLabel, getStatusColor } from "@/lib/utils";
 import AddToCompareButton from "@/components/product/AddToCompareButton";
+import MagneticButton from "@/components/ui/MagneticButton";
+import { trackWishlistAdd } from "@/lib/analytics";
 import type { ProductWithRelations } from "@/types";
 
 interface ProductCardProps {
@@ -41,6 +43,7 @@ export default function ProductCard({
         href={`/products/${product.slug}`}
         className="group block bg-white rounded-xl overflow-hidden transition-all duration-500 hover:shadow-[var(--shadow-card-hover)]"
         id={`product-card-${product.slug}`}
+        data-cursor="view"
       >
         {/* Image Container */}
         <div className="relative aspect-square overflow-hidden bg-[#F8F6F3]">
@@ -85,28 +88,33 @@ export default function ProductCard({
 
           {/* Wishlist Button */}
           {showWishlist && onWishlistToggle && (
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onWishlistToggle(product.id);
-              }}
-              className={cn(
-                "absolute top-3 right-3 z-10 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300",
-                "opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0",
-                isWishlisted
-                  ? "bg-red-50 text-red-500 opacity-100 translate-y-0"
-                  : "bg-white/90 text-text-muted hover:text-red-500"
-              )}
-              aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
-            >
-              <Heart
+            <MagneticButton strength={0.3} className="absolute top-3 right-3 z-10">
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onWishlistToggle(product.id);
+                  if (!isWishlisted) {
+                    trackWishlistAdd({ id: product.id, name: product.name, price: product.price });
+                  }
+                }}
                 className={cn(
-                  "w-4 h-4 transition-transform duration-300",
-                  isWishlisted && "fill-current scale-110"
+                  "w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300",
+                  "opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0",
+                  isWishlisted
+                    ? "bg-red-50 text-red-500 opacity-100 translate-y-0"
+                    : "bg-white/90 text-text-muted hover:text-red-500"
                 )}
-              />
-            </button>
+                aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+              >
+                <Heart
+                  className={cn(
+                    "w-4 h-4 transition-transform duration-300",
+                    isWishlisted && "fill-current scale-110"
+                  )}
+                />
+              </button>
+            </MagneticButton>
           )}
 
           {/* Compare Button */}
@@ -126,7 +134,7 @@ export default function ProductCard({
           >
             {product.name}
           </h3>
-          <p className="price text-base text-text-primary">
+          <p className="price text-base text-text-primary transition-colors duration-300 group-hover:text-accent">
             {formatPrice(product.price)}
           </p>
 

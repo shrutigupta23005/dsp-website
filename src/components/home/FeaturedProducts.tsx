@@ -50,14 +50,29 @@ export default function FeaturedProducts({
         <div className="relative">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
             {visibleProducts.map((product, index) => (
-              <ProductCard
+              <motion.div
                 key={product.id}
-                product={product}
-                index={index}
-                isWishlisted={wishlistedIds.includes(product.id)}
-                onWishlistToggle={onWishlistToggle}
-                showWishlist={isAuthenticated}
-              />
+                initial={{ opacity: 0, y: 30, filter: "blur(8px)" }}
+                whileInView={{
+                  opacity: 1,
+                  y: 0,
+                  filter: "blur(0px)",
+                }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{
+                  duration: 0.6,
+                  delay: index * 0.05,
+                  ease: "easeOut",
+                }}
+              >
+                <ProductCard
+                  product={product}
+                  index={index}
+                  isWishlisted={wishlistedIds.includes(product.id)}
+                  onWishlistToggle={onWishlistToggle}
+                  showWishlist={isAuthenticated}
+                />
+              </motion.div>
             ))}
           </div>
 

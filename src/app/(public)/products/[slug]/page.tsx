@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import ProductDetailClient from "@/components/product/ProductDetailClient";
 import { absoluteUrl } from "@/lib/utils";
+import { generateProductSchema, generateBreadcrumbSchema } from "@/lib/structured-data";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -30,13 +31,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const image = product.images.find((item) => item.type === "PRIMARY") || product.images[0];
 
   return {
-    title: product.name,
-    description: product.description || `View ${product.name} at Delhi Shoe Palace.`,
+    title: `${product.name} — ${product.brand.name}`,
+    description: product.description || `Shop ${product.name} by ${product.brand.name} at Delhi Shoe Palace. Premium footwear since 2001.`,
     alternates: { canonical: absoluteUrl(`/products/${product.slug}`) },
     openGraph: {
-      title: product.name,
-      description: product.description || `View ${product.name} at Delhi Shoe Palace.`,
+      title: `${product.name} — ${product.brand.name}`,
+      description: product.description || `Shop ${product.name} by ${product.brand.name} at Delhi Shoe Palace.`,
       images: image ? [{ url: image.url, alt: image.alt || product.name }] : undefined,
+      type: "website",
+      siteName: "Delhi Shoe Palace",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${product.name} — Delhi Shoe Palace`,
+      description: product.description || `Shop ${product.name} at Delhi Shoe Palace.`,
+      images: image ? [image.url] : undefined,
     },
   };
 }
@@ -76,12 +85,32 @@ export default async function ProductDetailPage({ params }: Props) {
       : Promise.resolve(null),
   ]);
 
+  const productData = JSON.parse(JSON.stringify(product));
+  const relatedData = JSON.parse(JSON.stringify(relatedProducts));
+
+  const productSchema = generateProductSchema(product);
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { name: "Home", url: absoluteUrl("/") },
+    { name: "Products", url: absoluteUrl("/products") },
+    { name: product.name, url: absoluteUrl(`/products/${product.slug}`) },
+  ]);
+
   return (
-    <ProductDetailClient
-      product={JSON.parse(JSON.stringify(product))}
-      relatedProducts={JSON.parse(JSON.stringify(relatedProducts))}
-      isAuthenticated={!!session}
-      isWishlisted={!!wishlisted}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      <ProductDetailClient
+        product={productData}
+        relatedProducts={relatedData}
+        isAuthenticated={!!session}
+        isWishlisted={!!wishlisted}
+      />
+    </>
   );
 }

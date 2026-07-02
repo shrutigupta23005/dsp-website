@@ -1,9 +1,15 @@
 import type { Metadata } from "next";
-import Script from "next/script";
-import { Inter, JetBrains_Mono, Playfair_Display } from "next/font/google";
+import { Inter, JetBrains_Mono, Playfair_Display, DM_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import AuthProvider from "@/components/auth/AuthProvider";
 import CompareBar from "@/components/product/CompareBar";
+import SmoothScrollProvider from "@/components/providers/SmoothScrollProvider";
+import GoogleAnalytics from "@/components/analytics/GoogleAnalytics";
+import CustomCursor from "@/components/ui/CustomCursor";
+import NoiseOverlay from "@/components/ui/NoiseOverlay";
+import SkipToContent from "@/components/ui/SkipToContent";
+import PageTransition from "@/components/ui/PageTransition";
+import { generateOrganizationSchema } from "@/lib/structured-data";
 import "./globals.css";
 
 const inter = Inter({
@@ -21,6 +27,13 @@ const playfair = Playfair_Display({
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains-mono",
+  display: "swap",
+});
+
+const dmMono = DM_Mono({
+  weight: ["400", "500"],
+  subsets: ["latin"],
+  variable: "--font-dm-mono",
   display: "swap",
 });
 
@@ -44,11 +57,20 @@ export const metadata: Metadata = {
     "Bata Delhi",
   ],
   authors: [{ name: "Delhi Shoe Palace" }],
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || "https://delhishoepalace.com"
+  ),
   openGraph: {
     type: "website",
     locale: "en_IN",
     url: "https://delhishoepalace.com",
     siteName: "Delhi Shoe Palace",
+    title: "Delhi Shoe Palace — 24 Years of Trust in Footwear",
+    description:
+      "Browse premium footwear for Men, Women & Kids. 200+ brands. Trusted for 24 years.",
+  },
+  twitter: {
+    card: "summary_large_image",
     title: "Delhi Shoe Palace — 24 Years of Trust in Footwear",
     description:
       "Browse premium footwear for Men, Women & Kids. 200+ brands. Trusted for 24 years.",
@@ -64,31 +86,30 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+  const orgSchema = generateOrganizationSchema();
 
   return (
-    <html lang="en" className={`${inter.variable} ${playfair.variable} ${jetbrainsMono.variable}`}>
+    <html
+      lang="en"
+      className={`${inter.variable} ${playfair.variable} ${jetbrainsMono.variable} ${dmMono.variable}`}
+    >
       <body>
-        {gaId ? (
-          <>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
-              strategy="afterInteractive"
-            />
-            <Script id="ga4-init" strategy="afterInteractive">
-              {`
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', '${gaId}');
-              `}
-            </Script>
-          </>
-        ) : null}
-        <AuthProvider>
-          {children}
-          <CompareBar />
-        </AuthProvider>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
+        />
+        <GoogleAnalytics />
+        <SkipToContent />
+        <SmoothScrollProvider>
+          <AuthProvider>
+            <CustomCursor />
+            <NoiseOverlay />
+            <PageTransition>
+              <main id="main-content">{children}</main>
+            </PageTransition>
+            <CompareBar />
+          </AuthProvider>
+        </SmoothScrollProvider>
         <Toaster
           position="bottom-right"
           theme="dark"

@@ -88,10 +88,10 @@ export default function ImageGallery({ images, productName }: ImageGalleryProps)
                 key={image.id}
                 onClick={() => setActiveIndex(index)}
                 className={cn(
-                  "relative aspect-square w-20 shrink-0 overflow-hidden rounded-lg border-2 transition-all duration-200",
+                  "relative aspect-square w-20 shrink-0 overflow-hidden rounded-lg border-2 transition-all duration-300",
                   activeIndex === index
-                    ? "border-accent shadow-sm"
-                    : "border-transparent opacity-60 hover:opacity-100"
+                    ? "border-accent shadow-sm shadow-accent/20 -translate-y-1"
+                    : "border-transparent opacity-60 hover:opacity-100 hover:-translate-y-1"
                 )}
                 aria-label={`View image ${index + 1}`}
               >

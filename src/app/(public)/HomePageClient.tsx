@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import Hero from "@/components/home/Hero";
+import HeroSection from "@/components/home/HeroSection";
 import CategoryGrid from "@/components/home/CategoryGrid";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
 import AboutStrip from "@/components/home/AboutStrip";
 import QuizTeaser from "@/components/home/QuizTeaser";
 import StoreInfo from "@/components/home/StoreInfo";
 import PersonalizedSection from "@/components/home/PersonalizedSection";
+import LoadingScreen from "@/components/ui/LoadingScreen";
+import LazySection from "@/components/ui/LazySection";
 import type { ProductWithRelations } from "@/types";
 
 interface HomePageClientProps {
@@ -72,7 +74,8 @@ export default function HomePageClient({
 
   return (
     <>
-      <Hero />
+      <LoadingScreen />
+      <HeroSection />
       {isAuthenticated && user && (
         <PersonalizedSection
           user={user}
@@ -87,9 +90,15 @@ export default function HomePageClient({
         wishlistedIds={wishlistedIds}
         onWishlistToggle={handleWishlistToggle}
       />
-      <AboutStrip />
-      <QuizTeaser />
-      <StoreInfo />
+      <LazySection estimatedHeight={800}>
+        <AboutStrip />
+      </LazySection>
+      <LazySection estimatedHeight={400}>
+        <QuizTeaser />
+      </LazySection>
+      <LazySection estimatedHeight={500}>
+        <StoreInfo />
+      </LazySection>
     </>
   );
 }
