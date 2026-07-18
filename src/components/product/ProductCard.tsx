@@ -41,12 +41,12 @@ export default function ProductCard({
     >
       <Link
         href={`/products/${product.slug}`}
-        className="group block bg-white rounded-xl overflow-hidden transition-all duration-500 hover:shadow-[var(--shadow-card-hover)]"
+        className="group block bg-card rounded-xl overflow-hidden transition-all duration-500 hover:shadow-[var(--shadow-card-hover)]"
         id={`product-card-${product.slug}`}
         data-cursor="view"
       >
         {/* Image Container */}
-        <div className="relative aspect-square overflow-hidden bg-[#F8F6F3]">
+        <div className="relative aspect-square overflow-hidden bg-secondary">
           {/* Default Image */}
           {primaryImage && (
             <Image
@@ -103,7 +103,7 @@ export default function ProductCard({
                   "opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0",
                   isWishlisted
                     ? "bg-red-50 text-red-500 opacity-100 translate-y-0"
-                    : "bg-white/90 text-text-muted hover:text-red-500"
+                    : "bg-background/90 text-text-muted hover:text-red-500"
                 )}
                 aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
               >

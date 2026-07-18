@@ -25,7 +25,7 @@ export default function RelatedProducts({ products }: RelatedProductsProps) {
   };
 
   return (
-    <section className="bg-white py-16" id="related-products">
+    <section className="bg-background py-16" id="related-products">
       <div className="container-wide">
         <div className="flex items-end justify-between">
           <SectionHeader

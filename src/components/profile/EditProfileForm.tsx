@@ -65,7 +65,7 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
             id="profile-name"
             type="text"
             {...register("name")}
-            className="w-full h-11 px-4 bg-white border border-border rounded-lg text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all"
+            className="w-full h-11 px-4 bg-background border border-border rounded-lg text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all"
           />
           {errors.name && (
             <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>
@@ -79,7 +79,7 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
             id="profile-email"
             type="email"
             {...register("email")}
-            className="w-full h-11 px-4 bg-white border border-border rounded-lg text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all"
+            className="w-full h-11 px-4 bg-background border border-border rounded-lg text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all"
           />
           {errors.email && (
             <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>

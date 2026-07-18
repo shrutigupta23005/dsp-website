@@ -23,7 +23,7 @@ export default function FeaturedProducts({
   const hasHiddenProducts = !isAuthenticated && products.length > 8;
 
   return (
-    <section className="py-24 bg-white" id="featured-products">
+    <section className="py-24 bg-background" id="featured-products">
       <div className="container-wide">
         {/* Section Header */}
         <motion.div

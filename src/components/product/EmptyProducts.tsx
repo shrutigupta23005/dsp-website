@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 
 export default function EmptyProducts() {
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-white px-8 py-16 text-center">
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card px-8 py-16 text-center">
       {/* Inline SVG shoe box */}
       <svg
         width="80"

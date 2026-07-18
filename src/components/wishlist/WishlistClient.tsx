@@ -30,7 +30,7 @@ export default function WishlistClient({ items }: { items: WishlistItem[] }) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-xl border border-dashed border-border bg-white p-16 text-center"
+        className="rounded-xl border border-dashed border-border bg-card p-16 text-center"
       >
         <Heart className="w-16 h-16 text-border mx-auto mb-6" strokeWidth={1} />
         <h2

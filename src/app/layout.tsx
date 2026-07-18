@@ -4,11 +4,13 @@ import { Toaster } from "sonner";
 import AuthProvider from "@/components/auth/AuthProvider";
 import CompareBar from "@/components/product/CompareBar";
 import SmoothScrollProvider from "@/components/providers/SmoothScrollProvider";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import GoogleAnalytics from "@/components/analytics/GoogleAnalytics";
 import CustomCursor from "@/components/ui/CustomCursor";
 import NoiseOverlay from "@/components/ui/NoiseOverlay";
 import SkipToContent from "@/components/ui/SkipToContent";
 import PageTransition from "@/components/ui/PageTransition";
+import CookieBanner from "@/components/ui/CookieBanner";
 import { generateOrganizationSchema } from "@/lib/structured-data";
 import "./globals.css";
 
@@ -91,7 +93,8 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${playfair.variable} ${jetbrainsMono.variable} ${dmMono.variable}`}
+      className={`dark ${inter.variable} ${playfair.variable} ${jetbrainsMono.variable} ${dmMono.variable}`}
+      suppressHydrationWarning
     >
       <body>
         <script
@@ -100,27 +103,29 @@ export default function RootLayout({
         />
         <GoogleAnalytics />
         <SkipToContent />
-        <SmoothScrollProvider>
-          <AuthProvider>
-            <CustomCursor />
-            <NoiseOverlay />
-            <PageTransition>
-              <main id="main-content">{children}</main>
-            </PageTransition>
-            <CompareBar />
-          </AuthProvider>
-        </SmoothScrollProvider>
+        <ThemeProvider>
+          <SmoothScrollProvider>
+            <AuthProvider>
+              <CustomCursor />
+              <NoiseOverlay />
+              <PageTransition>
+                <main id="main-content">{children}</main>
+              </PageTransition>
+              <CompareBar />
+              <CookieBanner />
+            </AuthProvider>
+          </SmoothScrollProvider>
+        </ThemeProvider>
         <Toaster
           position="bottom-right"
-          theme="dark"
           toastOptions={{
             style: {
-              background: "#1A1A1A",
-              color: "#F5F2EE",
+              background: "var(--bg-card)",
+              color: "var(--text-primary)",
               fontFamily: "Inter, sans-serif",
               fontSize: "14px",
               borderRadius: "8px",
-              border: "1px solid #2A2A2A",
+              border: "1px solid var(--border-color)",
             },
           }}
         />

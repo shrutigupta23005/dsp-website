@@ -74,7 +74,7 @@ export default function ProductDetailClient({
       <section className="container-wide pb-20">
         <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr]">
           <div>
-            <div className="relative aspect-square overflow-hidden rounded-lg bg-white">
+            <div className="relative aspect-square overflow-hidden rounded-lg bg-secondary">
               {selectedImage ? (
                 <Image
                   src={selectedImage.url}
@@ -92,7 +92,7 @@ export default function ProductDetailClient({
                   key={image.id}
                   onClick={() => setSelectedImageId(image.id)}
                   className={cn(
-                    "relative aspect-square overflow-hidden rounded-md border bg-white",
+                    "relative aspect-square overflow-hidden rounded-md border bg-secondary",
                     selectedImageId === image.id ? "border-accent" : "border-border"
                   )}
                 >
@@ -125,7 +125,7 @@ export default function ProductDetailClient({
                     onClick={() => setSelectedSize(size.size)}
                     className={cn(
                       "h-11 min-w-12 rounded-md border px-4 text-sm font-semibold transition-colors",
-                      selectedSize === size.size ? "border-accent bg-accent text-background-primary" : "border-border bg-white hover:border-accent",
+                      selectedSize === size.size ? "border-accent bg-accent text-background-primary" : "border-border bg-background hover:border-accent",
                       !size.isAvailable && "cursor-not-allowed opacity-40"
                     )}
                   >
@@ -138,14 +138,14 @@ export default function ProductDetailClient({
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-text-primary">Colors</h2>
               <div className="flex flex-wrap gap-3">
                 {product.colors.map((color) => (
-                  <span key={color.id} className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-3 py-1 text-sm">
+                  <span key={color.id} className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-sm">
                     <span className="h-4 w-4 rounded-full border border-border" style={{ backgroundColor: color.hexCode || "#ccc" }} />
                     {color.name}
                   </span>
                 ))}
               </div>
             </div>
-            <div className="mt-8 rounded-lg border border-border bg-white p-5">
+            <div className="mt-8 rounded-lg border border-border bg-card p-5">
               <dl className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <dt className="text-text-muted">Material</dt>
@@ -176,7 +176,7 @@ export default function ProductDetailClient({
           </div>
         </div>
       </section>
-      <section className="bg-white py-16">
+      <section className="bg-background py-16">
         <div className="container-wide">
           <p className="eyebrow">More Options</p>
           <h2 className="section-title mt-3">Related Products</h2>

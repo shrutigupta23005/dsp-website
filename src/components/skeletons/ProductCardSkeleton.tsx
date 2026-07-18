@@ -1,6 +1,6 @@
 export default function ProductCardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-xl bg-white">
+    <div className="overflow-hidden rounded-xl bg-card">
       {/* Image skeleton */}
       <div className="aspect-square animate-pulse bg-border/40" />
       {/* Info skeleton */}

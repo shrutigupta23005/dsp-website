@@ -190,7 +190,7 @@ export default function ProductListingClient({
               onChange={(event) => {
                 window.location.href = buildHref(initialFilters, { sort: event.target.value });
               }}
-              className="h-10 rounded-md border border-border bg-white px-3 text-sm"
+              className="h-10 rounded-md border border-border bg-background px-3 text-sm text-text-primary"
               aria-label="Sort products"
             >
               {SORTS.map((sort) => (
@@ -208,7 +208,7 @@ export default function ProductListingClient({
               <Link
                 key={key}
                 href={buildHref(initialFilters, { [key]: null })}
-                className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-3 py-1 text-xs text-text-muted"
+                className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-text-muted"
               >
                 {key}: {value}
                 <X className="h-3 w-3" />
@@ -222,7 +222,7 @@ export default function ProductListingClient({
 
         <div className="grid gap-8 lg:grid-cols-[260px_1fr]">
           <aside className="hidden lg:block">
-            <div className="sticky top-28 rounded-lg border border-border bg-white p-5">
+            <div className="sticky top-28 rounded-lg border border-border bg-card p-5">
               <FilterPanel categories={categories} brands={brands} initialFilters={initialFilters} />
             </div>
           </aside>
@@ -240,7 +240,7 @@ export default function ProductListingClient({
                 ))}
               </div>
             ) : (
-              <div className="rounded-lg border border-dashed border-border bg-white p-12 text-center">
+              <div className="rounded-lg border border-dashed border-border bg-card p-12 text-center">
                 <p className="eyebrow">No Matches</p>
                 <h2 className="mt-3 text-2xl font-semibold text-text-primary">Try a different filter set</h2>
                 <p className="mt-3 text-text-muted">The catalog has plenty more pairs waiting in other categories.</p>
@@ -250,7 +250,7 @@ export default function ProductListingClient({
               </div>
             )}
             {isLimited ? (
-              <div className="relative mt-8 overflow-hidden rounded-lg border border-border bg-white p-10 text-center">
+              <div className="relative mt-8 overflow-hidden rounded-lg border border-border bg-card p-10 text-center">
                 <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-background-secondary to-transparent" />
                 <Lock className="mx-auto h-8 w-8 text-accent" />
                 <h2 className="mt-4 text-2xl font-semibold text-text-primary">Login to unlock the full catalog</h2>

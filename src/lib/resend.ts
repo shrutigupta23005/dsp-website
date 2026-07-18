@@ -1,8 +1,12 @@
 import { Resend } from "resend";
+import { contactReplyHtml } from "./emails/contact-reply";
+import { contactOwnerHtml } from "./emails/contact-owner";
+import { newsletterWelcomeHtml } from "./emails/newsletter-welcome";
+import { adminDailyDigestHtml } from "./emails/admin-daily-digest";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const FROM_EMAIL = "Delhi Shoe Palace <noreply@delhishoepalace.com>";
+const FROM_EMAIL = `Delhi Shoe Palace <noreply@${process.env.NEXT_PUBLIC_SITE_DOMAIN || "delhishoepalace.com"}>`;
 
 const emailWrapper = (content: string) => `
 <!DOCTYPE html>
@@ -194,5 +198,94 @@ export async function sendWelcomeEmail(
     });
   } catch (error) {
     console.error("Failed to send welcome email:", error);
+  }
+}
+
+// ─── Phase 6 Email Functions ─────────────────────────────────
+
+/**
+ * Send auto-reply to user when they submit contact form
+ */
+export async function sendContactReply(
+  email: string,
+  name: string
+): Promise<void> {
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: "We received your message — Delhi Shoe Palace",
+      html: contactReplyHtml(name),
+    });
+  } catch (error) {
+    console.error("Failed to send contact reply:", error);
+  }
+}
+
+/**
+ * Send notification to store owner on contact form submission
+ */
+export async function sendContactOwnerNotification(data: {
+  name: string;
+  email: string;
+  phone?: string;
+  subject: string;
+  message: string;
+}): Promise<void> {
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: "contact@delhishoepalace.com",
+      replyTo: data.email,
+      subject: `[Website Contact] ${data.subject} — from ${data.name}`,
+      html: contactOwnerHtml(data),
+    });
+  } catch (error) {
+    console.error("Failed to send owner notification:", error);
+  }
+}
+
+/**
+ * Send welcome email to new newsletter subscriber
+ */
+export async function sendNewsletterWelcome(
+  email: string,
+  name: string,
+  token: string
+): Promise<void> {
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: "Welcome to the Delhi Shoe Palace Newsletter! 🎉",
+      html: newsletterWelcomeHtml(name, email, token),
+    });
+  } catch (error) {
+    console.error("Failed to send newsletter welcome:", error);
+  }
+}
+
+/**
+ * Send daily digest to admin
+ */
+export async function sendAdminDailyDigest(
+  adminEmail: string,
+  data: {
+    newUsers: number;
+    topProducts: { name: string; views: number }[];
+    newWishlists: number;
+    newContacts: number;
+    date: string;
+  }
+): Promise<void> {
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: adminEmail,
+      subject: `Daily Summary — ${data.date} | Delhi Shoe Palace`,
+      html: adminDailyDigestHtml(data),
+    });
+  } catch (error) {
+    console.error("Failed to send admin daily digest:", error);
   }
 }

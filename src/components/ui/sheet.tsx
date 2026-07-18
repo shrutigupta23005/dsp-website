@@ -39,7 +39,7 @@ const SheetContent = React.forwardRef<
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
-          "fixed z-50 gap-4 bg-white p-6 shadow-lg",
+          "fixed z-50 gap-4 bg-background p-6 shadow-lg",
           sideClasses[side],
           className
         )}

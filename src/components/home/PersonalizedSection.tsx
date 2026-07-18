@@ -119,7 +119,7 @@ export default function PersonalizedSection({
                       href={`/products/${item.product.slug}`}
                       className="flex-shrink-0 w-[180px] group"
                     >
-                      <div className="relative aspect-square overflow-hidden rounded-xl bg-white">
+                      <div className="relative aspect-square overflow-hidden rounded-xl bg-card">
                         {primaryImage && (
                           <Image
                             src={primaryImage.url}
@@ -150,7 +150,7 @@ export default function PersonalizedSection({
 
       {/* Recommendations */}
       {(recLoading || (recommendations && recommendations.length > 0)) && (
-        <section className="bg-white py-12">
+        <section className="bg-background py-12">
           <div className="container-wide">
             <p className="eyebrow">JUST FOR YOU</p>
             <h3
@@ -165,7 +165,7 @@ export default function PersonalizedSection({
               {recLoading ? (
                 <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
                   {Array.from({ length: 4 }, (_, i) => (
-                    <div key={i} className="overflow-hidden rounded-xl bg-white">
+                    <div key={i} className="overflow-hidden rounded-xl bg-card">
                       <div className="aspect-square animate-pulse bg-border/40" />
                       <div className="space-y-2 p-4">
                         <div className="h-3 w-16 animate-pulse rounded bg-border/40" />

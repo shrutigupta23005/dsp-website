@@ -6,7 +6,7 @@ import { getWhatsAppUrl } from "@/lib/utils";
 
 export default function StoreInfo() {
   return (
-    <section className="py-24 bg-white" id="store-info">
+    <section className="py-24 bg-background" id="store-info">
       <div className="container-wide">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

@@ -40,7 +40,7 @@ export default function ImageGallery({ images, productName }: ImageGalleryProps)
       {/* Main Image */}
       <div className="space-y-3">
         <div
-          className="group relative aspect-square cursor-zoom-in overflow-hidden rounded-xl bg-white"
+          className="group relative aspect-square cursor-zoom-in overflow-hidden rounded-xl bg-secondary"
           onClick={() => setLightboxOpen(true)}
           role="button"
           tabIndex={0}

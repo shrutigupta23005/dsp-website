@@ -67,7 +67,7 @@ export default function ContactForm() {
 
   if (isSubmitted) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-white p-12 text-center">
+      <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-card p-12 text-center">
         <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent/10">
           <CheckCircle className="h-8 w-8 text-accent" />
         </div>
@@ -99,7 +99,7 @@ export default function ContactForm() {
       {/* Form */}
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="space-y-5 rounded-xl border border-border bg-white p-6 md:p-8"
+        className="space-y-5 rounded-xl border border-border bg-card p-6 md:p-8"
       >
         <div className="grid gap-5 sm:grid-cols-2">
           {/* Name */}
@@ -236,7 +236,7 @@ export default function ContactForm() {
 
       {/* Store Info Card */}
       <div className="space-y-4">
-        <div className="rounded-xl border border-border bg-white p-6">
+        <div className="rounded-xl border border-border bg-card p-6">
           <h3
             className="text-lg font-bold text-text-primary"
             style={{ fontFamily: "var(--font-display)" }}

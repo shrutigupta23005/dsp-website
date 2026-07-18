@@ -307,3 +307,15 @@ model ComparisonProduct {
   @@index([comparisonId])
   @@index([productId])
 }
+
+// ─── Newsletter ──────────────────────────────────────────────
+
+model Newsletter {
+  id               String   @id @default(cuid())
+  email            String   @unique
+  name             String?
+  subscribed       Boolean  @default(true)
+  unsubscribeToken String   @unique @default(cuid())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}

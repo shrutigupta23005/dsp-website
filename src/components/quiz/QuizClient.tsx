@@ -61,7 +61,7 @@ export default function QuizClient() {
             ))}
           </div>
         ) : (
-          <div className="rounded-lg border border-dashed border-border bg-white p-12 text-center text-text-muted">
+          <div className="rounded-lg border border-dashed border-border bg-card p-12 text-center text-text-muted">
             No exact matches yet. Try a wider budget or color family.
           </div>
         )}
@@ -73,7 +73,7 @@ export default function QuizClient() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl rounded-lg border border-border bg-white p-8">
+    <div className="mx-auto max-w-2xl rounded-lg border border-border bg-card p-8">
       <p className="price text-sm text-accent">Step {step + 1} of {steps.length}</p>
       <h1 className="mt-3 text-3xl font-semibold text-text-primary" style={{ fontFamily: "var(--font-display)" }}>
         {current.title}

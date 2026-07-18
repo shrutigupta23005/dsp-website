@@ -1,29 +1,27 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
-import { motion, useSpring, useMotionValue } from "framer-motion";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { motion, useMotionValue, useSpring } from "framer-motion";
+
+type CursorState = "default" | "hover" | "product" | "zoom" | "danger" | "click";
 
 export default function CustomCursor() {
-  const dotRef = useRef<HTMLDivElement>(null);
-  const [cursorState, setCursorState] = useState<
-    "default" | "link" | "view" | "magnetic" | "click"
-  >("default");
-  const [isTouch, setIsTouch] = useState(false);
+  const [cursorState, setCursorState] = useState<CursorState>("default");
+  const [isTouch, setIsTouch] = useState(true); // default true to avoid flash
   const [isVisible, setIsVisible] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const baseStateRef = useRef<CursorState>("default");
 
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
 
-  const ringX = useSpring(mouseX, { stiffness: 100, damping: 28, mass: 0.5 });
-  const ringY = useSpring(mouseY, { stiffness: 100, damping: 28, mass: 0.5 });
+  const springX = useSpring(mouseX, { stiffness: 200, damping: 20 });
+  const springY = useSpring(mouseY, { stiffness: 200, damping: 20 });
 
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
       mouseX.set(e.clientX);
       mouseY.set(e.clientY);
-      if (dotRef.current) {
-        dotRef.current.style.transform = `translate(${e.clientX - 5}px, ${e.clientY - 5}px)`;
-      }
       if (!isVisible) setIsVisible(true);
     },
     [mouseX, mouseY, isVisible]
@@ -31,146 +29,219 @@ export default function CustomCursor() {
 
   useEffect(() => {
     // Check for touch device
+    if (typeof window === "undefined") return;
     const isTouchDevice =
       window.matchMedia("(pointer: coarse)").matches ||
       "ontouchstart" in window;
     setIsTouch(isTouchDevice);
     if (isTouchDevice) return;
 
-    // Hide default cursor
-    document.body.style.cursor = "none";
+    // Add custom cursor class to html
+    document.documentElement.classList.add("custom-cursor-active");
 
+    // Mouse movement
     window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mousedown", () => setCursorState("click"));
-    window.addEventListener("mouseup", () => setCursorState("default"));
     window.addEventListener("mouseleave", () => setIsVisible(false));
     window.addEventListener("mouseenter", () => setIsVisible(true));
 
-    const handleElementHover = () => {
-      // Delegate hover detection via mouseover/mouseout
-      const onMouseOver = (e: MouseEvent) => {
-        const target = e.target as HTMLElement;
-        const cursorAttr = target.closest("[data-cursor]");
-        if (cursorAttr) {
-          const val = cursorAttr.getAttribute("data-cursor");
-          if (val === "view") setCursorState("view");
-          else if (val === "magnetic") setCursorState("magnetic");
+    // Click states
+    const onMouseDown = () => setCursorState("click");
+    const onMouseUp = () => setCursorState(baseStateRef.current);
+    window.addEventListener("mousedown", onMouseDown);
+    window.addEventListener("mouseup", onMouseUp);
+
+    // Hover delegation
+    const onMouseOver = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+
+      // Check data-cursor attributes first
+      const cursorEl = target.closest("[data-cursor]");
+      if (cursorEl) {
+        const val = cursorEl.getAttribute("data-cursor");
+        if (val === "product") {
+          baseStateRef.current = "product";
+          setCursorState("product");
           return;
         }
-        if (target.closest("a, button, [role='button']")) {
-          setCursorState("link");
+        if (val === "zoom") {
+          baseStateRef.current = "zoom";
+          setCursorState("zoom");
           return;
         }
-      };
-
-      const onMouseOut = (e: MouseEvent) => {
-        const target = e.target as HTMLElement;
-        if (
-          target.closest(
-            "a, button, [role='button'], [data-cursor]"
-          )
-        ) {
-          setCursorState("default");
+        if (val === "danger") {
+          baseStateRef.current = "danger";
+          setCursorState("danger");
+          return;
         }
-      };
+      }
 
-      document.addEventListener("mouseover", onMouseOver);
-      document.addEventListener("mouseout", onMouseOut);
-
-      return () => {
-        document.removeEventListener("mouseover", onMouseOver);
-        document.removeEventListener("mouseout", onMouseOut);
-      };
+      // Check interactive elements
+      if (target.closest("a, button, [role='button'], input[type='submit'], label[for]")) {
+        baseStateRef.current = "hover";
+        setCursorState("hover");
+        return;
+      }
     };
 
-    const cleanupHover = handleElementHover();
+    const onMouseOut = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target.closest(
+          "a, button, [role='button'], input[type='submit'], label[for], [data-cursor]"
+        )
+      ) {
+        baseStateRef.current = "default";
+        setCursorState("default");
+      }
+    };
+
+    document.addEventListener("mouseover", onMouseOver);
+    document.addEventListener("mouseout", onMouseOut);
+
+    // Listen for page transitions
+    const onTransitionStart = () => setIsTransitioning(true);
+    const onTransitionEnd = () => setIsTransitioning(false);
+    window.addEventListener("page-transition-start", onTransitionStart);
+    window.addEventListener("page-transition-end", onTransitionEnd);
 
     return () => {
-      document.body.style.cursor = "";
+      document.documentElement.classList.remove("custom-cursor-active");
       window.removeEventListener("mousemove", handleMouseMove);
-      cleanupHover();
+      window.removeEventListener("mousedown", onMouseDown);
+      window.removeEventListener("mouseup", onMouseUp);
+      document.removeEventListener("mouseover", onMouseOver);
+      document.removeEventListener("mouseout", onMouseOut);
+      window.removeEventListener("page-transition-start", onTransitionStart);
+      window.removeEventListener("page-transition-end", onTransitionEnd);
     };
   }, [handleMouseMove]);
 
   if (isTouch) return null;
 
-  const getDotStyles = () => {
+  const getStyles = (): {
+    scale: number;
+    borderColor: string;
+    bg: string;
+    rotate: number;
+  } => {
+    if (isTransitioning) {
+      return { scale: 0, borderColor: "var(--cursor-color)", bg: "transparent", rotate: 45 };
+    }
+
     switch (cursorState) {
-      case "link":
-        return "scale-0";
+      case "hover":
+        return {
+          scale: 1.8,
+          borderColor: "var(--cursor-color)",
+          bg: "rgba(201,147,58,0.15)",
+          rotate: 45,
+        };
+      case "product":
+        return {
+          scale: 2.5,
+          borderColor: "var(--cursor-color)",
+          bg: "transparent",
+          rotate: 45,
+        };
+      case "zoom":
+        return {
+          scale: 2,
+          borderColor: "#E5AC52",
+          bg: "transparent",
+          rotate: 45,
+        };
+      case "danger":
+        return {
+          scale: 1.5,
+          borderColor: "#EF4444",
+          bg: "rgba(239,68,68,0.1)",
+          rotate: 45,
+        };
       case "click":
-        return "scale-50";
+        return {
+          scale: 0.7,
+          borderColor: "var(--cursor-color)",
+          bg: "rgba(201,147,58,0.3)",
+          rotate: 45,
+        };
       default:
-        return "scale-100";
+        return {
+          scale: 1,
+          borderColor: "var(--cursor-color)",
+          bg: "transparent",
+          rotate: 45,
+        };
     }
   };
 
-  const getRingSize = () => {
-    switch (cursorState) {
-      case "link":
-        return { width: 100, height: 100, borderColor: "rgba(201,147,58,0.15)" };
-      case "view":
-        return { width: 120, height: 120, borderColor: "#C9933A" };
-      case "magnetic":
-        return { width: 60, height: 40, borderColor: "#C9933A" };
-      case "click":
-        return { width: 32, height: 32, borderColor: "#C9933A" };
-      default:
-        return { width: 40, height: 40, borderColor: "#C9933A" };
-    }
-  };
-
-  const ringStyle = getRingSize();
+  const styles = getStyles();
+  const size = 32;
 
   return (
-    <>
-      {/* Dot - follows instantly */}
-      <div
-        ref={dotRef}
-        className={`fixed top-0 left-0 pointer-events-none z-[9999] transition-transform duration-100 ${getDotStyles()}`}
-        style={{
-          width: 10,
-          height: 10,
-          borderRadius: "50%",
-          backgroundColor: "#C9933A",
-          mixBlendMode: "difference",
-          opacity: isVisible ? 1 : 0,
-        }}
-      />
+    <motion.div
+      className="cursor-diamond"
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: size,
+        height: size,
+        x: springX,
+        y: springY,
+        translateX: -(size / 2),
+        translateY: -(size / 2),
+        rotate: styles.rotate,
+        scale: styles.scale,
+        borderWidth: "1.5px",
+        borderStyle: "solid",
+        borderColor: styles.borderColor,
+        backgroundColor: styles.bg,
+        pointerEvents: "none",
+        zIndex: 9999,
+        opacity: isVisible && !isTransitioning ? 1 : 0,
+        transition:
+          "border-color 200ms ease, background-color 200ms ease, scale 200ms ease, opacity 150ms ease",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      {/* Arrow icon for product state */}
+      {cursorState === "product" && (
+        <svg
+          width="10"
+          height="10"
+          viewBox="0 0 10 10"
+          fill="none"
+          style={{ transform: "rotate(-45deg)" }}
+        >
+          <path
+            d="M1 5H9M9 5L5 1M9 5L5 9"
+            stroke="var(--cursor-color)"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      )}
 
-      {/* Ring - lags behind with spring physics */}
-      <motion.div
-        className="fixed top-0 left-0 pointer-events-none z-[9998] flex items-center justify-center"
-        style={{
-          x: ringX,
-          y: ringY,
-          width: ringStyle.width,
-          height: ringStyle.height,
-          borderRadius: cursorState === "magnetic" ? "30%" : "50%",
-          border: `1.5px solid ${ringStyle.borderColor}`,
-          backgroundColor:
-            cursorState === "link"
-              ? "rgba(201,147,58,0.1)"
-              : "transparent",
-          translateX: -(ringStyle.width / 2),
-          translateY: -(ringStyle.height / 2),
-          opacity: isVisible ? 1 : 0,
-          transition:
-            "width 0.3s, height 0.3s, border-color 0.3s, background-color 0.3s, border-radius 0.3s",
-        }}
-      >
-        {cursorState === "view" && (
-          <span
-            className="text-[9px] font-bold uppercase tracking-[0.15em]"
-            style={{
-              fontFamily: "var(--font-dm-mono, var(--font-utility))",
-              color: "#C9933A",
-            }}
-          >
-            View
-          </span>
-        )}
-      </motion.div>
-    </>
+      {/* Plus icon for zoom state */}
+      {cursorState === "zoom" && (
+        <svg
+          width="10"
+          height="10"
+          viewBox="0 0 10 10"
+          fill="none"
+          style={{ transform: "rotate(-45deg)" }}
+        >
+          <path
+            d="M5 1V9M1 5H9"
+            stroke="#E5AC52"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+        </svg>
+      )}
+    </motion.div>
   );
 }

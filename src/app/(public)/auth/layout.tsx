@@ -30,7 +30,7 @@ export default async function AuthLayout({
         </Link>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl p-10 shadow-[0_24px_60px_rgb(10_10_10/0.16)]">
+        <div className="bg-card rounded-2xl p-10 shadow-[0_24px_60px_rgb(10_10_10/0.16)]">
           {children}
         </div>
       </div>

@@ -69,7 +69,7 @@ export default function RecentlyViewed({ currentProductId }: RecentlyViewedProps
                 href={`/products/${item.product.slug}`}
                 className="flex-shrink-0 w-[160px] group"
               >
-                <div className="relative aspect-square overflow-hidden rounded-xl bg-white">
+                <div className="relative aspect-square overflow-hidden rounded-xl bg-card">
                   {primaryImage && (
                     <Image
                       src={primaryImage.url}

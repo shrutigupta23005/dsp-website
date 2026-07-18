@@ -39,7 +39,7 @@ export default function SizeSelector({
               selected === sizeItem.size
                 ? "border-accent bg-accent text-background-primary"
                 : sizeItem.isAvailable
-                  ? "border-border bg-white text-text-primary hover:border-accent"
+                  ? "border-border bg-background text-text-primary hover:border-accent"
                   : "cursor-not-allowed border-border bg-muted text-text-muted line-through opacity-50"
             )}
             aria-label={`Size UK ${sizeItem.size}${!sizeItem.isAvailable ? " - unavailable" : ""}`}

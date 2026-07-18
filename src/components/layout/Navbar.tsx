@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
@@ -68,6 +69,10 @@ export default function Navbar() {
 
   const isHomePage = pathname === "/";
 
+  // Whether the nav should be "transparent over hero" mode:
+  // Only on homepage AND not scrolled
+  const isTransparent = isHomePage && !isScrolled && !isMobileOpen;
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
@@ -100,12 +105,12 @@ export default function Navbar() {
   return (
     <>
       <nav
+        style={{ isolation: "isolate" }}
         className={cn(
           "fixed top-0 left-0 right-0 z-[200] transition-all duration-500",
-          isHomePage && !isScrolled && !isMobileOpen
+          isTransparent
             ? "bg-transparent"
-            : "bg-[#0A0A0A]/95 backdrop-blur-md border-b border-white/5",
-          isScrolled && "shadow-lg"
+            : "nav-bg shadow-sm"
         )}
       >
         <div className="container-wide">
@@ -120,7 +125,10 @@ export default function Navbar() {
               </div>
               <div className="flex flex-col">
                 <span
-                  className="text-lg font-bold tracking-tight text-white leading-none"
+                  className={cn(
+                    "text-lg font-bold tracking-tight leading-none transition-colors duration-300",
+                    isTransparent ? "text-white" : "text-[var(--text-primary)]"
+                  )}
                   style={{ fontFamily: "var(--font-display)" }}
                 >
                   Delhi Shoe Palace
@@ -146,7 +154,9 @@ export default function Navbar() {
                       "flex items-center gap-1 px-4 py-2 text-sm font-medium transition-colors duration-200",
                       pathname === link.href
                         ? "text-accent"
-                        : "text-white/70 hover:text-white"
+                        : isTransparent
+                        ? "text-white/70 hover:text-white"
+                        : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                     )}
                     id={`nav-link-${link.label.toLowerCase()}`}
                   >
@@ -169,14 +179,18 @@ export default function Navbar() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 8 }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
-                        className="absolute top-full left-0 mt-1 w-52 bg-[#111111] border border-white/10 rounded-lg shadow-xl overflow-hidden"
+                        className="absolute top-full left-0 mt-1 w-52 rounded-lg shadow-xl overflow-hidden border"
+                        style={{
+                          background: "var(--bg-card)",
+                          borderColor: "var(--border-color)",
+                        }}
                       >
                         <div className="py-2">
                           {link.submenu.map((sub) => (
                             <Link
                               key={sub.label}
                               href={sub.href}
-                              className="block px-4 py-2.5 text-sm text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-150"
+                              className="block px-4 py-2.5 text-sm transition-colors duration-150 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
                               id={`nav-sub-${sub.label.toLowerCase().replace(/\s+/g, "-")}`}
                             >
                               {sub.label}
@@ -195,18 +209,33 @@ export default function Navbar() {
               {/* Search Button */}
               <button
                 onClick={() => setIsSearchOpen(true)}
-                className="p-2.5 text-white/70 hover:text-white transition-colors rounded-full hover:bg-white/5"
+                className={cn(
+                  "p-2.5 transition-colors rounded-full",
+                  isTransparent
+                    ? "text-white/70 hover:text-white hover:bg-white/5"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
+                )}
                 aria-label="Search products"
                 id="navbar-search-btn"
               >
                 <Search className="w-5 h-5" />
               </button>
 
+              {/* Theme Toggle */}
+              <div className="hidden sm:block">
+                <ThemeToggle />
+              </div>
+
               {/* Wishlist */}
               {session ? (
                 <Link
                   href="/wishlist"
-                  className="p-2.5 text-white/70 hover:text-white transition-colors rounded-full hover:bg-white/5 hidden sm:flex"
+                  className={cn(
+                    "p-2.5 transition-colors rounded-full hidden sm:flex",
+                    isTransparent
+                      ? "text-white/70 hover:text-white hover:bg-white/5"
+                      : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
+                  )}
                   aria-label="Wishlist"
                   id="navbar-wishlist-btn"
                 >
@@ -218,7 +247,12 @@ export default function Navbar() {
               {session ? (
                 <div className="relative group">
                   <button
-                    className="flex items-center gap-2 p-2 text-white/70 hover:text-white transition-colors rounded-full hover:bg-white/5"
+                    className={cn(
+                      "flex items-center gap-2 p-2 transition-colors rounded-full",
+                      isTransparent
+                        ? "text-white/70 hover:text-white hover:bg-white/5"
+                        : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
+                    )}
                     id="navbar-profile-btn"
                   >
                     {session.user?.image ? (
@@ -231,45 +265,55 @@ export default function Navbar() {
                       <User className="w-5 h-5" />
                     )}
                   </button>
-                  <div className="absolute right-0 top-full mt-1 w-48 bg-[#111111] border border-white/10 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div
+                    className="absolute right-0 top-full mt-1 w-48 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 border"
+                    style={{
+                      background: "var(--bg-card)",
+                      borderColor: "var(--border-color)",
+                    }}
+                  >
                     <div className="py-2">
-                      <div className="px-4 py-2 border-b border-white/5">
-                        <p className="text-sm font-medium text-white truncate">
+                      <div
+                        className="px-4 py-2"
+                        style={{ borderBottom: "1px solid var(--border-color)" }}
+                      >
+                        <p className="text-sm font-medium text-[var(--text-primary)] truncate">
                           {session.user?.name}
                         </p>
-                        <p className="text-xs text-white/40 truncate">
+                        <p className="text-xs text-[var(--text-muted)] truncate">
                           {session.user?.email}
                         </p>
                       </div>
                       <Link
                         href="/profile"
-                        className="block px-4 py-2.5 text-sm text-white/60 hover:text-white hover:bg-white/5"
+                        className="block px-4 py-2.5 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
                       >
                         Profile
                       </Link>
                       <Link
                         href="/wishlist"
-                        className="block px-4 py-2.5 text-sm text-white/60 hover:text-white hover:bg-white/5"
+                        className="block px-4 py-2.5 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
                       >
                         Wishlist
                       </Link>
                       <Link
                         href="/recently-viewed"
-                        className="block px-4 py-2.5 text-sm text-white/60 hover:text-white hover:bg-white/5"
+                        className="block px-4 py-2.5 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
                       >
                         Recently Viewed
                       </Link>
                       {session.user?.role === "ADMIN" && (
                         <Link
                           href="/admin/dashboard"
-                          className="block px-4 py-2.5 text-sm text-accent hover:bg-white/5"
+                          className="block px-4 py-2.5 text-sm text-accent hover:bg-[var(--bg-card-hover)]"
                         >
                           Admin Dashboard
                         </Link>
                       )}
                       <button
                         onClick={() => signOut({ callbackUrl: "/" })}
-                        className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-white/5 border-t border-white/5"
+                        className="w-full text-left px-4 py-2.5 text-sm text-[var(--danger-color)] hover:bg-[var(--bg-card-hover)]"
+                        style={{ borderTop: "1px solid var(--border-color)" }}
                       >
                         Sign Out
                       </button>
@@ -279,7 +323,7 @@ export default function Navbar() {
               ) : (
                 <Link
                   href="/auth/login"
-                  className="hidden sm:flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#0A0A0A] bg-accent hover:bg-accent-hover transition-all duration-200 rounded-md"
+                  className="hidden sm:flex items-center gap-2 px-4 py-2 text-sm font-medium text-[var(--text-on-accent)] bg-accent hover:bg-accent-hover transition-all duration-200 rounded-md"
                   id="navbar-login-btn"
                 >
                   <LogIn className="w-4 h-4" />
@@ -290,8 +334,14 @@ export default function Navbar() {
               {/* Mobile Hamburger */}
               <button
                 onClick={() => setIsMobileOpen(!isMobileOpen)}
-                className="lg:hidden p-2.5 text-white/70 hover:text-white transition-colors rounded-full hover:bg-white/5"
-                aria-label="Toggle menu"
+                className={cn(
+                  "lg:hidden p-2.5 transition-colors rounded-full",
+                  isTransparent
+                    ? "text-white/70 hover:text-white hover:bg-white/5"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
+                )}
+                aria-label={isMobileOpen ? "Close menu" : "Open menu"}
+                aria-expanded={isMobileOpen}
                 id="navbar-menu-btn"
               >
                 {isMobileOpen ? (
@@ -384,20 +434,31 @@ export default function Navbar() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="fixed top-0 right-0 bottom-0 z-[195] w-[300px] bg-[#0A0A0A] border-l border-white/5 overflow-y-auto lg:hidden"
+              className="fixed top-0 right-0 bottom-0 z-[195] w-[300px] overflow-y-auto lg:hidden border-l"
+              style={{
+                background: "var(--bg-card)",
+                borderColor: "var(--border-color)",
+              }}
             >
               <div className="p-6 pt-20">
+                {/* Mobile Theme Toggle */}
+                <div className="flex items-center justify-between px-4 py-3 mb-4 rounded-lg" style={{ background: "var(--bg-secondary)" }}>
+                  <span className="text-sm font-medium text-[var(--text-muted)]">Theme</span>
+                  <ThemeToggle />
+                </div>
+
                 {/* Mobile Nav Links */}
                 <div className="space-y-1">
                   {NAV_LINKS.map((link) => (
                     <div key={link.label}>
                       <Link
                         href={link.href}
+                        onClick={() => setIsMobileOpen(false)}
                         className={cn(
                           "block px-4 py-3 text-base font-medium rounded-lg transition-colors",
                           pathname === link.href
                             ? "text-accent bg-accent/10"
-                            : "text-white/70 hover:text-white hover:bg-white/5"
+                            : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
                         )}
                       >
                         {link.label}
@@ -408,7 +469,8 @@ export default function Navbar() {
                             <Link
                               key={sub.label}
                               href={sub.href}
-                              className="block px-4 py-2 text-sm text-white/40 hover:text-white/70 transition-colors"
+                              onClick={() => setIsMobileOpen(false)}
+                              className="block px-4 py-2 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
                             >
                               {sub.label}
                             </Link>
@@ -420,7 +482,7 @@ export default function Navbar() {
                 </div>
 
                 {/* Mobile Auth Section */}
-                <div className="mt-8 pt-6 border-t border-white/10">
+                <div className="mt-8 pt-6" style={{ borderTop: "1px solid var(--border-color)" }}>
                   {session ? (
                     <div className="space-y-3">
                       <div className="flex items-center gap-3 px-4 py-2">
@@ -436,24 +498,25 @@ export default function Navbar() {
                           </div>
                         )}
                         <div>
-                          <p className="text-sm font-medium text-white">
+                          <p className="text-sm font-medium text-[var(--text-primary)]">
                             {session.user?.name}
                           </p>
-                          <p className="text-xs text-white/40">
+                          <p className="text-xs text-[var(--text-muted)]">
                             {session.user?.email}
                           </p>
                         </div>
                       </div>
                       <Link
                         href="/wishlist"
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-white/60 hover:text-white transition-colors"
+                        onClick={() => setIsMobileOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
                       >
                         <Heart className="w-4 h-4" />
                         Wishlist
                       </Link>
                       <button
                         onClick={() => signOut({ callbackUrl: "/" })}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 transition-colors"
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--danger-color)] hover:opacity-80 transition-colors"
                       >
                         <LogIn className="w-4 h-4" />
                         Sign Out
@@ -462,7 +525,8 @@ export default function Navbar() {
                   ) : (
                     <Link
                       href="/auth/login"
-                      className="flex items-center justify-center gap-2 w-full py-3 text-sm font-semibold text-[#0A0A0A] bg-accent hover:bg-accent-hover rounded-lg transition-colors"
+                      onClick={() => setIsMobileOpen(false)}
+                      className="flex items-center justify-center gap-2 w-full py-3 text-sm font-semibold text-[var(--text-on-accent)] bg-accent hover:bg-accent-hover rounded-lg transition-colors"
                     >
                       <LogIn className="w-4 h-4" />
                       Login / Sign Up
