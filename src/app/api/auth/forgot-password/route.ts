@@ -3,14 +3,28 @@ import { prisma } from "@/lib/prisma";
 import { sendOtpEmail } from "@/lib/resend";
 import { fail, message } from "@/lib/api";
 import { forgotPasswordSchema } from "@/lib/validators";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit by IP
+    const ip = request.headers.get("x-forwarded-for") ?? "anonymous";
+    if (!rateLimit(`forgot-password:${ip}`, 5, 3600)) {
+      return fail("Too many requests. Try again later.", 429);
+    }
+
     const body = await request.json();
     const parsed = forgotPasswordSchema.safeParse(body);
     if (!parsed.success) return fail(parsed.error.errors[0].message, 400);
 
+    // Zod schema already trims and lowercases email
     const { email } = parsed.data;
+
+    // Per-email rate limit: max 3 OTP requests per email per hour
+    if (!rateLimit(`otp:${email}`, 3, 3600)) {
+      // Return generic message to prevent email enumeration
+      return message("If this email is registered, you'll receive an OTP");
+    }
 
     const user = await prisma.user.findUnique({ where: { email } });
 
@@ -32,6 +46,7 @@ export async function POST(request: NextRequest) {
         identifier: email,
         token: otp,
         expires: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
+        attempts: 0,
       },
     });
 

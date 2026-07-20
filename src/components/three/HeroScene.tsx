@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useMemo, Suspense } from "react";
+import { useRef, useMemo, useState, useEffect, Suspense } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import {
   Float,
@@ -14,11 +14,27 @@ import {
 import * as THREE from "three";
 import { BlendFunction } from "postprocessing";
 
-function ProceduralShoe() {
+/**
+ * Detect low-end devices by checking hardware concurrency and device memory.
+ * Returns true if the device likely can't handle heavy 3D effects.
+ */
+function useIsLowEnd(): boolean {
+  const [isLow, setIsLow] = useState(false);
+
+  useEffect(() => {
+    const cores = navigator.hardwareConcurrency || 4;
+    const memory = (navigator as unknown as { deviceMemory?: number }).deviceMemory || 4;
+    setIsLow(cores <= 4 || memory <= 4);
+  }, []);
+
+  return isLow;
+}
+
+function ProceduralShoe({ isLowEnd }: { isLowEnd: boolean }) {
   const groupRef = useRef<THREE.Group>(null);
 
   useFrame((state) => {
-    if (!groupRef.current) return;
+    if (!groupRef.current || isLowEnd) return; // Static on low-end
     groupRef.current.rotation.y =
       Math.sin(state.clock.elapsedTime * 0.3) * 0.1 - 0.3;
   });
@@ -44,7 +60,7 @@ function ProceduralShoe() {
   );
 
   return (
-    <Float speed={1.5} rotationIntensity={0.4} floatIntensity={0.8}>
+    <Float speed={isLowEnd ? 0.8 : 1.5} rotationIntensity={isLowEnd ? 0.2 : 0.4} floatIntensity={isLowEnd ? 0.4 : 0.8}>
       <group ref={groupRef} position={[2.5, 0, 0]} scale={1.8}>
         {/* Sole */}
         <mesh position={[0, -0.15, 0]} material={darkGoldMaterial}>
@@ -76,11 +92,12 @@ function ProceduralShoe() {
   );
 }
 
-function Particles() {
+function Particles({ isLowEnd }: { isLowEnd: boolean }) {
   const meshRef = useRef<THREE.Points>(null);
   const isMobile =
     typeof window !== "undefined" ? window.innerWidth < 768 : false;
-  const count = isMobile ? 800 : 2000;
+  // Low-end: 300, mobile: 800, desktop: 2000
+  const count = isLowEnd ? 300 : isMobile ? 800 : 2000;
 
   const positions = useMemo(() => {
     const arr = new Float32Array(count * 3);
@@ -128,7 +145,7 @@ function CameraSway() {
   return null;
 }
 
-function SceneContents() {
+function SceneContents({ isLowEnd }: { isLowEnd: boolean }) {
   return (
     <>
       <PerspectiveCamera makeDefault fov={50} position={[0, 0, 5]} />
@@ -163,34 +180,39 @@ function SceneContents() {
         color="#FFFFFF"
       />
 
-      <ProceduralShoe />
-      <Particles />
+      <ProceduralShoe isLowEnd={isLowEnd} />
+      <Particles isLowEnd={isLowEnd} />
 
-      <EffectComposer>
-        <Bloom
-          luminanceThreshold={0.8}
-          luminanceSmoothing={0.9}
-          intensity={0.4}
-        />
-        <ChromaticAberration
-          blendFunction={BlendFunction.NORMAL}
-          offset={new THREE.Vector2(0.002, 0.001)}
-        />
-      </EffectComposer>
+      {/* Disable post-processing on low-end devices */}
+      {!isLowEnd && (
+        <EffectComposer>
+          <Bloom
+            luminanceThreshold={0.8}
+            luminanceSmoothing={0.9}
+            intensity={0.4}
+          />
+          <ChromaticAberration
+            blendFunction={BlendFunction.NORMAL}
+            offset={new THREE.Vector2(0.002, 0.001)}
+          />
+        </EffectComposer>
+      )}
     </>
   );
 }
 
 export default function HeroScene() {
+  const isLowEnd = useIsLowEnd();
+
   return (
     <div className="absolute inset-0 z-0">
       <Canvas
-        dpr={[1, 1.5]}
-        gl={{ antialias: true, alpha: true }}
+        dpr={isLowEnd ? [1, 1] : [1, 1.5]}
+        gl={{ antialias: !isLowEnd, alpha: true }}
         style={{ background: "transparent" }}
       >
         <Suspense fallback={null}>
-          <SceneContents />
+          <SceneContents isLowEnd={isLowEnd} />
         </Suspense>
       </Canvas>
     </div>

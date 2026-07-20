@@ -68,7 +68,9 @@ export default async function ProductsPage({ searchParams }: Props) {
           : { createdAt: "desc" };
 
   const isGuest = !session;
+  // Guests: always first 15 products, ignore page param (server-side enforcement)
   const take = isGuest ? 15 : parsed.limit;
+  const skip = isGuest ? 0 : (parsed.page - 1) * parsed.limit;
 
   const [products, total, categories, brands, wishlisted] = await Promise.all([
     prisma.product.findMany({
@@ -83,6 +85,7 @@ export default async function ProductsPage({ searchParams }: Props) {
       },
       orderBy,
       take,
+      skip,
     }),
     prisma.product.count({ where }),
     prisma.category.findMany({

@@ -13,6 +13,37 @@ interface CompareState {
   isAdded: (id: string) => boolean;
 }
 
+/**
+ * Safe sessionStorage wrapper — falls back to in-memory if
+ * sessionStorage is unavailable (e.g., private browsing in some browsers).
+ */
+function safeSessionStorage() {
+  if (typeof window === "undefined") {
+    return {
+      getItem: () => null,
+      setItem: () => {},
+      removeItem: () => {},
+    };
+  }
+
+  try {
+    // Test if sessionStorage is accessible
+    const testKey = "__dsp_storage_test__";
+    sessionStorage.setItem(testKey, "1");
+    sessionStorage.removeItem(testKey);
+    return sessionStorage;
+  } catch {
+    // sessionStorage is disabled or full — fall back to in-memory
+    console.warn("sessionStorage unavailable, compare data will not persist across tabs");
+    const memoryStore = new Map<string, string>();
+    return {
+      getItem: (key: string) => memoryStore.get(key) ?? null,
+      setItem: (key: string, value: string) => memoryStore.set(key, value),
+      removeItem: (key: string) => memoryStore.delete(key),
+    };
+  }
+}
+
 export const useCompareStore = create<CompareState>()(
   persist(
     (set, get) => ({
@@ -41,15 +72,7 @@ export const useCompareStore = create<CompareState>()(
     }),
     {
       name: "dsp-compare",
-      storage: createJSONStorage(() => {
-        if (typeof window !== "undefined") return sessionStorage;
-        // SSR fallback — never actually used at runtime
-        return {
-          getItem: () => null,
-          setItem: () => {},
-          removeItem: () => {},
-        };
-      }),
+      storage: createJSONStorage(() => safeSessionStorage()),
     }
   )
 );

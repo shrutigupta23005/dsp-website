@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef, useCallback } from "react";
 import useSWR from "swr";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
@@ -14,6 +15,10 @@ export function useWishlist() {
     fetcher
   );
 
+  // Debounce guard: prevent rapid toggle race conditions
+  const pendingRef = useRef(false);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const wishlist = data || [];
 
   const isWishlisted = (productId: string) =>
@@ -22,7 +27,8 @@ export function useWishlist() {
   const getWishlistItemId = (productId: string) =>
     wishlist.find((w) => w.productId === productId)?.id;
 
-  const toggle = async (productId: string) => {
+  const toggle = useCallback(async (productId: string) => {
+    // Early return before any mutate if not authenticated
     if (!session) {
       toast.error("Sign in to save products", {
         action: {
@@ -35,11 +41,21 @@ export function useWishlist() {
       return;
     }
 
-    const wishlisted = isWishlisted(productId);
+    // Debounce: reject rapid clicks while a request is in-flight
+    if (pendingRef.current) return;
+
+    // Debounce timer: 300ms between toggles
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    pendingRef.current = true;
+
+    const wishlisted = wishlist.some((w) => w.productId === productId);
 
     if (wishlisted) {
       // Optimistically remove
-      const previousData = wishlist;
+      const previousData = [...wishlist];
       mutate(
         wishlist.filter((w) => w.productId !== productId),
         false
@@ -56,7 +72,7 @@ export function useWishlist() {
       }
     } else {
       // Optimistically add
-      const previousData = wishlist;
+      const previousData = [...wishlist];
       const optimisticItem: WishlistItem = {
         id: `temp-${productId}`,
         userId: session.user?.id || "",
@@ -80,7 +96,12 @@ export function useWishlist() {
         toast.error("Failed to update wishlist");
       }
     }
-  };
+
+    // Release lock after 300ms debounce
+    debounceTimerRef.current = setTimeout(() => {
+      pendingRef.current = false;
+    }, 300);
+  }, [session, wishlist, mutate]);
 
   return {
     wishlist,

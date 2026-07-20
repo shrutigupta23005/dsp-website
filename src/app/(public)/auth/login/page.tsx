@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
@@ -16,6 +16,7 @@ export default function LoginPage() {
   const callbackUrl = searchParams.get("callbackUrl") || "/";
   const [showPassword, setShowPassword] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [capsLockOn, setCapsLockOn] = useState(false);
 
   const {
     register,
@@ -24,6 +25,19 @@ export default function LoginPage() {
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
   });
+
+  // Detect Caps Lock globally
+  useEffect(() => {
+    const handleKeyEvent = (e: KeyboardEvent) => {
+      setCapsLockOn(e.getModifierState("CapsLock"));
+    };
+    window.addEventListener("keydown", handleKeyEvent);
+    window.addEventListener("keyup", handleKeyEvent);
+    return () => {
+      window.removeEventListener("keydown", handleKeyEvent);
+      window.removeEventListener("keyup", handleKeyEvent);
+    };
+  }, []);
 
   const onSubmit = async (data: LoginInput) => {
     try {
@@ -73,7 +87,7 @@ export default function LoginPage() {
             type="email"
             placeholder="your@email.com"
             {...register("email")}
-            className="w-full h-11 px-4 bg-white border border-border rounded-lg text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all"
+            className="w-full h-11 px-4 bg-background border border-border rounded-lg text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all"
           />
           {errors.email && (
             <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>
@@ -90,7 +104,7 @@ export default function LoginPage() {
               type={showPassword ? "text" : "password"}
               placeholder="Enter your password"
               {...register("password")}
-              className="w-full h-11 px-4 pr-11 bg-white border border-border rounded-lg text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all"
+              className="w-full h-11 px-4 pr-11 bg-background border border-border rounded-lg text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all"
             />
             <button
               type="button"
@@ -100,6 +114,12 @@ export default function LoginPage() {
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
+          {capsLockOn && (
+            <p className="text-xs text-amber-500 mt-1 flex items-center gap-1">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500" />
+              Caps Lock is on
+            </p>
+          )}
           {errors.password && (
             <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>
           )}
@@ -147,7 +167,7 @@ export default function LoginPage() {
       <button
         onClick={handleGoogleLogin}
         disabled={isGoogleLoading}
-        className="w-full flex items-center justify-center gap-3 h-11 bg-white border border-border rounded-lg text-sm font-medium text-text-primary hover:bg-gray-50 transition-colors disabled:opacity-50"
+        className="w-full flex items-center justify-center gap-3 h-11 bg-background border border-border rounded-lg text-sm font-medium text-text-primary hover:bg-secondary transition-colors disabled:opacity-50"
         id="google-login-btn"
       >
         <svg className="w-5 h-5" viewBox="0 0 24 24">

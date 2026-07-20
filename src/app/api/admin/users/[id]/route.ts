@@ -91,6 +91,14 @@ export async function PATCH(
     const body = await request.json();
     const { isBlocked } = body;
 
+    // Prevent role escalation via API — role changes are not allowed
+    if ("role" in body) {
+      return NextResponse.json(
+        { error: "Role changes are not allowed via this endpoint" },
+        { status: 400 }
+      );
+    }
+
     if (isBlocked === undefined || typeof isBlocked !== "boolean") {
       return NextResponse.json({ error: "Invalid parameters" }, { status: 400 });
     }

@@ -63,7 +63,7 @@ export default function AdminShell({ children, user }: AdminShellProps) {
   const { title, breadcrumb } = getPageMeta();
 
   return (
-    <div className="min-h-screen bg-[#0F0F0F] text-[#F5F5F5] font-sans antialiased flex">
+    <div className="dark min-h-screen bg-[#0F0F0F] text-[#F5F5F5] font-sans antialiased flex">
       {/* 1. Desktop Fixed Sidebar (260px wide) */}
       <div className="hidden lg:block w-[260px] shrink-0">
         <AdminSidebar user={user} />

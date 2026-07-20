@@ -1,6 +1,18 @@
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
+/**
+ * Validates that a redirect URL is safe (relative, no protocol injection).
+ */
+function isSafeRedirect(url: string): boolean {
+  return (
+    url.startsWith("/") &&
+    !url.startsWith("//") &&
+    !url.includes("javascript:") &&
+    !url.includes("data:")
+  );
+}
+
 export default auth((req) => {
   const { nextUrl } = req;
   const isLoggedIn = !!req.auth;
@@ -34,14 +46,17 @@ export default auth((req) => {
 
   // Redirect logged-in users away from auth pages
   if (isLoggedIn && isAuthRoute) {
-    return NextResponse.redirect(new URL("/", nextUrl));
+    // Admins go to admin dashboard, regular users go to home
+    const destination = userRole === "ADMIN" ? "/admin/dashboard" : "/";
+    return NextResponse.redirect(new URL(destination, nextUrl));
   }
 
   // Protect admin routes
   if (isAdminRoute) {
     if (!isLoggedIn) {
+      const callbackUrl = encodeURIComponent(pathname);
       return NextResponse.redirect(
-        new URL(`/auth/login?callbackUrl=${encodeURIComponent(pathname)}`, nextUrl)
+        new URL(`/auth/login?callbackUrl=${callbackUrl}`, nextUrl)
       );
     }
     if (userRole !== "ADMIN") {
@@ -59,6 +74,10 @@ export default auth((req) => {
   // Protect user routes
   if (isProtectedRoute && !isLoggedIn) {
     const callbackUrl = encodeURIComponent(pathname);
+    // Sanitize the callback URL
+    if (!isSafeRedirect(pathname)) {
+      return NextResponse.redirect(new URL("/auth/login", nextUrl));
+    }
     return NextResponse.redirect(
       new URL(`/auth/login?callbackUrl=${callbackUrl}`, nextUrl)
     );
@@ -70,6 +89,16 @@ export default auth((req) => {
       { error: "Authentication required" },
       { status: 401 }
     );
+  }
+
+  // Sanitize callbackUrl parameter on auth routes to prevent open redirect
+  if (isAuthRoute) {
+    const callbackUrl = nextUrl.searchParams.get("callbackUrl");
+    if (callbackUrl && !isSafeRedirect(decodeURIComponent(callbackUrl))) {
+      // Strip the malicious callbackUrl, redirect to clean auth page
+      const cleanUrl = new URL(pathname, nextUrl);
+      return NextResponse.redirect(cleanUrl);
+    }
   }
 
   return NextResponse.next();
@@ -87,4 +116,3 @@ export const config = {
     "/((?!_next/static|_next/image|favicon.ico|public/).*)",
   ],
 };
-

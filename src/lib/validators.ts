@@ -3,17 +3,23 @@ import { z } from "zod";
 // ─── Auth Validators ─────────────────────────────────────────
 
 export const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
+  email: z.string().trim().toLowerCase().email("Please enter a valid email address"),
   password: z.string().min(1, "Password is required"),
 });
 
 export const signupSchema = z
   .object({
-    name: z.string().min(2, "Name must be at least 2 characters").max(50, "Name is too long"),
-    email: z.string().email("Please enter a valid email address"),
+    name: z
+      .string()
+      .trim()
+      .min(2, "Name must be at least 2 characters")
+      .max(50, "Name is too long")
+      .regex(/^[a-zA-Z\s'-]+$/, "Name can only contain letters, spaces, hyphens, and apostrophes"),
+    email: z.string().trim().toLowerCase().email("Please enter a valid email address"),
     password: z
       .string()
       .min(8, "Password must be at least 8 characters")
+      .max(72, "Password cannot exceed 72 characters") // bcrypt silently truncates beyond 72
       .regex(/(?=.*[A-Z])(?=.*[0-9])/, "Must contain an uppercase letter and a number"),
     confirmPassword: z.string(),
   })
@@ -23,30 +29,35 @@ export const signupSchema = z
   });
 
 export const forgotPasswordSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
+  email: z.string().trim().toLowerCase().email("Please enter a valid email address"),
 });
 
 export const verifyOtpSchema = z.object({
-  email: z.string().email(),
-  otp: z.string().length(6, "OTP must be 6 digits"),
+  email: z.string().trim().toLowerCase().email(),
+  otp: z.string().trim().length(6, "OTP must be 6 digits"),
 });
 
 export const resetPasswordSchema = z.object({
-  email: z.string().email(),
+  email: z.string().trim().toLowerCase().email(),
   resetToken: z.string().min(1, "Reset token is required"),
   newPassword: z
     .string()
     .min(8, "Password must be at least 8 characters")
+    .max(72, "Password cannot exceed 72 characters")
     .regex(/(?=.*[A-Z])(?=.*[0-9])/, "Must contain an uppercase letter and a number"),
 });
 
 // ─── Product Validators ─────────────────────────────────────
 
 export const productSchema = z.object({
-  name: z.string().min(3, "Product name must be at least 3 characters").max(200),
+  name: z
+    .string()
+    .min(3, "Product name must be at least 3 characters")
+    .max(100, "Product name is too long")
+    .regex(/^[^<>]*$/, "No HTML tags allowed"),
   slug: z.string().min(3).max(200).optional(),
   description: z.string().min(10, "Description must be at least 10 characters").max(2000).optional(),
-  price: z.number().positive("Price must be a positive number").max(99999),
+  price: z.number().positive("Price must be a positive number").max(999999, "Price cannot exceed ₹9,99,999"),
   brandId: z.string().cuid("Invalid brand"),
   categoryId: z.string().cuid("Invalid category"),
   subcategoryId: z.string().cuid("Invalid subcategory"),
@@ -69,7 +80,14 @@ export const productSchema = z.object({
         isAvailable: z.boolean().default(true),
       })
     )
-    .min(1, "At least one size is required"),
+    .min(1, "At least one size is required")
+    .refine(
+      (sizes) => {
+        const sizeValues = sizes.map((s) => s.size);
+        return new Set(sizeValues).size === sizeValues.length;
+      },
+      { message: "Duplicate sizes are not allowed" }
+    ),
 });
 
 // ─── Category Validators ────────────────────────────────────
@@ -120,18 +138,24 @@ export const quizSchema = z.object({
 // ─── Profile Validators ─────────────────────────────────────
 
 export const profileUpdateSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters").optional(),
-  email: z.string().email("Please enter a valid email address").optional(),
+  name: z.string().trim().min(2, "Name must be at least 2 characters").optional(),
+  email: z.string().trim().toLowerCase().email("Please enter a valid email address").optional(),
 });
 
 // ─── Contact Validators ─────────────────────────────────────
 
 export const contactSchema = z.object({
-  name: z.string().min(2, "Name is required"),
-  email: z.string().email("Please enter a valid email"),
-  phone: z.string().optional(),
+  name: z.string().trim().min(2, "Name is required").max(100, "Name is too long"),
+  email: z.string().trim().toLowerCase().email("Please enter a valid email"),
+  phone: z
+    .string()
+    .optional()
+    .refine(
+      (val) => !val || val === "" || /^[6-9]\d{9}$/.test(val),
+      { message: "Please enter a valid 10-digit Indian mobile number" }
+    ),
   subject: z.string().min(2, "Subject is required"),
-  message: z.string().min(20, "Message must be at least 20 characters").max(500, "Message is too long"),
+  message: z.string().trim().min(20, "Message must be at least 20 characters").max(500, "Message is too long"),
 });
 
 // ─── Query Validators ───────────────────────────────────────

@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/nextjs";
+import { scrubSensitiveData } from "@/lib/sentry-scrub";
 
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
@@ -9,6 +10,7 @@ Sentry.init({
   beforeSend(event) {
     // Don't send events in development
     if (process.env.NODE_ENV === "development") return null;
-    return event;
+    // Scrub PII (passwords, OTPs, tokens) before sending
+    return scrubSensitiveData(event);
   },
 });
