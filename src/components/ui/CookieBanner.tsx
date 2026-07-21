@@ -286,6 +286,6 @@ export default function CookieBanner() {
 // Extend Window for gtag
 declare global {
   interface Window {
-    gtag?: (...args: unknown[]) => void;
+    gtag?: (...args: any[]) => void;
   }
 }

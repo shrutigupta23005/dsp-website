@@ -35,7 +35,7 @@ export async function POST(request: Request) {
       "unknown";
 
     const rateLimitResult = rateLimit(ip, 3, 3600);
-    if (!rateLimitResult.success) {
+    if (!rateLimitResult) {
       return NextResponse.json(
         { success: false, error: "Too many requests. Please try again later." },
         { status: 429 }

@@ -12,6 +12,8 @@ import SkipToContent from "@/components/ui/SkipToContent";
 import PageTransition from "@/components/ui/PageTransition";
 import CookieBanner from "@/components/ui/CookieBanner";
 import { generateOrganizationSchema } from "@/lib/structured-data";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 const inter = Inter({
@@ -129,6 +131,8 @@ export default function RootLayout({
             },
           }}
         />
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
